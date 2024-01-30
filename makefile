@@ -1,7 +1,16 @@
-all:
-# rm -f main.exe
-# g++ -c simpleTexture.cpp -o simpleTexture.o -Iglew\include -Iglfw\include -Iglm -Wall -g
-# g++ simpleTexture.o -o main -Lglfw\lib -Lglew\lib -lglfw3 -lglew32 -lopengl32 -lgdi32 -Wall -g
+CXX = g++
+EXE = main
+INCLUDE = -Iglfw\include -Iglew\include -Iglm
+LINK = -Lglfw\lib -Lglew\lib -lglfw3 -lglew32 -lopengl32 -lgdi32
+FLAGS = -Wall -g
 
-	rm -f main.exe
-	g++ simpleTexture.cpp -o main -Iglew\include -Iglfw\include -Iglm -Lglfw\lib -Lglew\lib -lglfw3 -lglew32 -lopengl32 -lgdi32
+TARGETS = $(subst src/, , $(wildcard src/*.cpp))
+
+all: clean $(TARGETS:.cpp=.o)
+	$(CXX) $(TARGETS:.cpp=.o) -o $(EXE) $(LINK) $(FLAGS)
+
+%.o: src/%.cpp
+	$(CXX) -c $< -o $@ $(INCLUDE) $(FLAGS)
+
+clean:
+	rm -f *.exe *.o
