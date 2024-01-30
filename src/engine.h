@@ -17,7 +17,7 @@ struct ray
 
 struct camera
 {
-	glm::vec3 e{0, 0, -10}; // viewpoint
+	glm::vec3 e{0, 0, -5}; // viewpoint
 
 	glm::vec3 u{1, 0, 0}; // right basis vector
 	glm::vec3 v{0, 1, 0}; // up basis vector
@@ -73,7 +73,7 @@ struct hit_information;
 struct material
 {
 	glm::vec3 k_a{0.1, 0.1, 0.1};
-	glm::vec3 k_d{0.5, 0.5, 0.5};
+	glm::vec3 k_d{1.0, 1.0, 1.0};
 };
 
 struct surface
@@ -142,7 +142,7 @@ struct sphere : public surface
 struct light
 {
 	glm::vec3 color{1.0f, 1.0f, 1.0f};
-	virtual glm::vec3 illuminate(ray& r, hit_information& hit) = 0;
+	// virtual glm::vec3 illuminate(ray& r, hit_information& hit);
 };
 
 struct ambient_light : public light
@@ -155,15 +155,33 @@ struct ambient_light : public light
 
 struct point_light : public light
 {
-	glm::vec3 p{0.0f, 2.0f, 0.0f}; // light position
-	glm::vec3 illuminate(ray& r, hit_information& hit)
+	glm::vec3 p{}; // light position
+
+	point_light(glm::vec3 pos)
+		: p{pos}
 	{
-		// glm::vec3 v{-r.d/glm::length(r.d)};
+	}
+
+	glm::vec3 illuminate(ray& r, hit_information& hit, std::vector<sphere>& scene)
+	{
 		glm::vec3 x{r.evaluate(hit.t)};
 		float dist{glm::length(p - x)};
-		glm::vec3 l{(p-x)/dist};
-		glm::vec3 n{hit.normal};
-		glm::vec3 E{glm::max(0.0f,glm::dot(n,l))/(float)glm::pow(dist,2) * color};
+		glm::vec3 l{(p-x)/dist}; // normalized ray pointing to light
+		ray light_ray{x+0.1f*l, l};
+		hit_information h;
+		for (auto& obj : scene)
+		{
+			if (hit.s == &obj)
+			{
+				continue;
+			}
+			h = obj.intersect(light_ray);
+			if (h.hits != 0)
+			{
+				return glm::vec3{0, 0, 0};
+			}
+		}
+		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l))/(float)glm::pow(dist,2) * color};
 		return hit.s->m.k_d*hit.s->color*E;
 	}
 };

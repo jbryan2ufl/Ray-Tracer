@@ -23,15 +23,15 @@ struct ray_tracer
 		cam.ny=height;
 
 		scene.push_back(sphere{});
-		scene.push_back(sphere{glm::vec3{0, 0, -1}, 0.5f, glm::vec3{0.0f, 0.0f, 1.0f}});
+		scene.push_back(sphere{glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}});
 
 		ambient_lights.push_back(ambient_light{});
-		point_lights.push_back(point_light{});
+		point_lights.push_back(point_light{glm::vec3{0.0f, 0.0f, -5.0f}});
+		// point_lights.push_back(point_light{glm::vec3{0.0f, 3.0f, 0.0f}});
 	}
 
 	void update_image()
 	{
-		// std::cout << cam.e.x << ' ' << cam.e.y << ' ' << cam.e.z << '\n';
 		for(int i = 0; i < height; i++)
 		{
 			for (int j = 0; j < width; j++)
@@ -84,13 +84,12 @@ struct ray_tracer
 		glm::vec3 color{};
 		for (auto& l : point_lights)
 		{
-			color += l.illuminate(r, hit);
+			color += l.illuminate(r, hit, scene);
 		}
 		for (auto& l : ambient_lights)
 		{
 			color += l.illuminate(r, hit);
 		}
-		// std::cout << color.r << ' ' << color.g << ' ' << color.b << '\n';
 		return color;
 	}
 
