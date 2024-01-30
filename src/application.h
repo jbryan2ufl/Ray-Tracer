@@ -12,6 +12,9 @@
 #include "engine.h"
 #include "raytracer.h"
 
+void framebuffer_size_wrapper(GLFWwindow* window, int width, int height);
+void key_wrapper(GLFWwindow* window, int key, int scancode, int action, int mods);
+
 class application
 {
 private:
@@ -62,8 +65,9 @@ public:
 	void loop();
 	void close();
 	void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
 
-static application* callback;
+static application* callback{nullptr};
 
 #endif

@@ -9,9 +9,13 @@
 struct ray_tracer
 {
 	// Create the image (RGB Array) to be displayed
-	perspective_camera cam{};
-	const int width  = 512; // keep it in powers of 2!
-	const int height = 512; // keep it in powers of 2!
+	orthographic_camera ocam{};
+	perspective_camera pcam{};
+	camera* cam{};
+	bool ortho{true};
+
+	const int width  = 128; // keep it in powers of 2!
+	const int height = 128; // keep it in powers of 2!
 	unsigned char* image{new unsigned char[width*height*3]};
 	std::vector<sphere> scene{};
 	std::vector<ambient_light> ambient_lights{};
@@ -19,17 +23,45 @@ struct ray_tracer
 
 	ray_tracer()
 	{
-		cam.nx=width;
-		cam.ny=height;
+		cam=&pcam;
+		cam=&ocam;
+		cam->nx=width;
+		cam->ny=height;
+
+		material matte{};
+		matte.k_s=glm::vec3{0.3};
+
+		material shiny{};
+		shiny.k_s=glm::vec3{1.0};
+		shiny.p=128;
 
 		scene.push_back(sphere{});
-		scene.push_back(sphere{glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}});
-		scene.push_back(sphere{glm::vec3{2, -1, 4}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}});
+		scene.push_back(sphere{glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}, shiny});
+		scene.push_back(sphere{glm::vec3{2, -1, 2}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}, shiny});
 
 		ambient_lights.push_back(ambient_light{});
+		point_lights.push_back(point_light{glm::vec3{0.0f, 2.5f, -1.0f}});
 		point_lights.push_back(point_light{glm::vec3{0.0f, 0.5f, -3.0f}});
-		point_lights.push_back(point_light{glm::vec3{1.0f, 0.0f, -3.0f}});
-		point_lights.push_back(point_light{glm::vec3{1.0f, 2.0f, 2.0f}});
+		point_lights.push_back(point_light{glm::vec3{2, 2, 2}});
+	}
+
+	void hello()
+	{
+		std::cout << "HELLO\n";
+	}
+
+	void swap_cam()
+	{
+		std::cout << "SHIT BVUGGGGIN";
+		// if (ortho)
+		// {
+		// 	// cam=&pcam;
+		// }
+		// else
+		// {
+		// 	// cam=&ocam;
+		// }
+		// ortho=!ortho;
 	}
 
 	void update_image()
@@ -40,7 +72,8 @@ struct ray_tracer
 			{
 				int idx = (i * width + j) * 3;
 
-				ray r{cam.generate_ray(j, i)};
+				ray r{};
+				// ray r{cam->generate_ray(j, i)};
 
 				hit_information closest_hit{};
 				for (auto& obj : scene)
@@ -87,6 +120,7 @@ struct ray_tracer
 		for (auto& l : point_lights)
 		{
 			color += l.illuminate(r, hit, scene);
+			// color += l.specular(r, hit);
 		}
 		for (auto& l : ambient_lights)
 		{

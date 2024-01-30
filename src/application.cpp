@@ -1,6 +1,7 @@
 #include "application.h"
 
-void framebuffer_size_wrapper(GLFWwindow* window, int width, int height);
+// void framebuffer_size_wrapper(GLFWwindow* window, int width, int height);
+// void key_wrapper(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 application::application()
 {
@@ -26,6 +27,7 @@ void application::init()
 		exit(1);
 	}
 	glfwMakeContextCurrent(window);
+	glfwSetKeyCallback(window, key_wrapper);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_wrapper);
 
 	// // GLEW: load all OpenGL function pointers
@@ -121,7 +123,6 @@ void application::init()
 
 	rt = new ray_tracer{};
 
-
 }
 
 void application::loop()
@@ -187,69 +188,73 @@ void application::close()
 // ---------------------------------------------------------------------------------------------------------
 void application::processInput(GLFWwindow *window)
 {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(window, true);
-	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		rt->cam.e -= rt->cam.w*deltaTime;
-	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		rt->cam.e -= rt->cam.u*deltaTime;
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		rt->cam.e += rt->cam.w*deltaTime;
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		rt->cam.e += rt->cam.u*deltaTime;
-	}
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-	{
-		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x, rt->cam.w.y-deltaTime, rt->cam.w.z});
-		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
-		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
-	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	{
-		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x, rt->cam.w.y+deltaTime, rt->cam.w.z});
-		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
-		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-	{
-		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x+deltaTime, rt->cam.w.y, rt->cam.w.z});
-		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
-		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
-	}
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-	{
-		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x-deltaTime, rt->cam.w.y, rt->cam.w.z});
-		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
-		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
-	}
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	{
-		rt->cam.e.y+=0.05f;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-	{
-		rt->cam.e.y-=0.05f;
-	}
-	// if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	// if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	// {
-	// 	rt->cam.e.x -= 0.5f;
+	// 	glfwSetWindowShouldClose(window, true);
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e -= rt->cam->w*deltaTime;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e -= rt->cam->u*deltaTime;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e += rt->cam->w*deltaTime;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e += rt->cam->u*deltaTime;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	// {
+	// 	rt->cam->w = glm::normalize(glm::vec3{rt->cam->w.x, rt->cam->w.y-deltaTime, rt->cam->w.z});
+	// 	rt->cam->u = glm::normalize(glm::cross(rt->cam->w, rt->cam->world_up));
+	// 	rt->cam->v = glm::normalize(glm::cross(rt->cam->u, rt->cam->w));
 	// }
 	// if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 	// {
-	// 	rt->cam.e.z -= 0.5f;
+	// 	rt->cam->w = glm::normalize(glm::vec3{rt->cam->w.x, rt->cam->w.y+deltaTime, rt->cam->w.z});
+	// 	rt->cam->u = glm::normalize(glm::cross(rt->cam->w, rt->cam->world_up));
+	// 	rt->cam->v = glm::normalize(glm::cross(rt->cam->u, rt->cam->w));
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	// {
+	// 	rt->cam->w = glm::normalize(glm::vec3{rt->cam->w.x+deltaTime, rt->cam->w.y, rt->cam->w.z});
+	// 	rt->cam->u = glm::normalize(glm::cross(rt->cam->w, rt->cam->world_up));
+	// 	rt->cam->v = glm::normalize(glm::cross(rt->cam->u, rt->cam->w));
 	// }
 	// if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 	// {
-	// 	rt->cam.e.x += 0.5f;
+	// 	rt->cam->w = glm::normalize(glm::vec3{rt->cam->w.x-deltaTime, rt->cam->w.y, rt->cam->w.z});
+	// 	rt->cam->u = glm::normalize(glm::cross(rt->cam->w, rt->cam->world_up));
+	// 	rt->cam->v = glm::normalize(glm::cross(rt->cam->u, rt->cam->w));
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e.y+=0.05f;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e.y-=0.05f;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+	// {
+	// 	rt->swap_cam();
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e.x -= 0.5f;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e.z -= 0.5f;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	// {
+	// 	rt->cam->e.x += 0.5f;
 	// }
 }
 
@@ -262,10 +267,22 @@ void application::framebuffer_size_callback(GLFWwindow* window, int width, int h
 	glViewport(0, 0, width, height);
 }
 
+void application::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
+	{
+		std::cout << "SHIT BVUGGGGIN";
+		// rt->swap_cam();
+		// rt->update_image();
+	}
+}
+
 void framebuffer_size_wrapper(GLFWwindow* window, int width, int height)
 {
-	if (callback)
-	{
-		callback->framebuffer_size_callback(window, width, height);
-	}
+	callback->framebuffer_size_callback(window, width, height);
+}
+
+void key_wrapper(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	callback->key_callback(window, key, scancode, action, mods);
 }

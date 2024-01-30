@@ -17,6 +17,8 @@ struct ray
 
 struct camera
 {
+	bool active{false};
+
 	glm::vec3 e{0, 0, -5}; // viewpoint
 
 	glm::vec3 u{1, 0, 0}; // right basis vector
@@ -32,6 +34,8 @@ struct camera
 	int r{1}; // right bound
 	int b{-1}; // bottom bound
 	int t{1}; // top bound
+
+	virtual ray generate_ray(int i, int j)=0;
 };
 
 struct orthographic_camera : public camera
@@ -52,7 +56,7 @@ struct orthographic_camera : public camera
 
 struct perspective_camera : public camera
 {
-	float d{2.0f}; // depth
+	float d{1.0f}; // depth
 
 	ray generate_ray(int i, int j)
 	{
@@ -62,7 +66,7 @@ struct perspective_camera : public camera
 		float coord_v = b + (t - b) * (j + 0.5) / ny;
 
 		viewing_ray.p = e;
-		viewing_ray.d = -d * w + (u * coord_u) + (coord_v * v);
+		viewing_ray.d = glm::normalize(-d * w + (u * coord_u) + (coord_v * v));
 
 		return viewing_ray;
 	}
@@ -72,8 +76,10 @@ struct hit_information;
 
 struct material
 {
-	glm::vec3 k_a{0.1, 0.1, 0.1};
-	glm::vec3 k_d{1.0, 1.0, 1.0};
+	glm::vec3 k_a{0.05};
+	glm::vec3 k_d{1.0};
+	glm::vec3 k_s{0.3};
+	int p{8};
 };
 
 struct surface
@@ -104,11 +110,12 @@ struct sphere : public surface
 	{
 	}
 
-	sphere(glm::vec3 c, float r, glm::vec3 col)
+	sphere(glm::vec3 c, float r, glm::vec3 col, material mat)
 		: c{c}
 		, r{r}
 	{
 		color=col;
+		m=mat;
 	}
 
 	hit_information intersect(ray& view_ray)
@@ -184,8 +191,9 @@ struct point_light : public light
 				return glm::vec3{0, 0, 0};
 			}
 		}
-		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l))/(float)glm::pow(dist,2) * color};
-		return hit.s->m.k_d*hit.s->color*E;
+		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l)) * color /(float)glm::pow(dist,2)}; // /(float)glm::pow(dist,2)
+		glm::vec3 h2{glm::normalize(l-r.d)};
+		return hit.s->m.k_s*(float)glm::pow(glm::max(0.0f,glm::dot(hit.normal,h2)), hit.s->m.p)*E*color+hit.s->m.k_d*hit.s->color*E;
 	}
 };
 
