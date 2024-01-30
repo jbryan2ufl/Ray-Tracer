@@ -17,11 +17,13 @@ struct ray
 
 struct camera
 {
-	glm::vec3 e{0, 0, -5}; // viewpoint
+	glm::vec3 e{0, 0, -10}; // viewpoint
 
 	glm::vec3 u{1, 0, 0}; // right basis vector
 	glm::vec3 v{0, 1, 0}; // up basis vector
 	glm::vec3 w{0, 0, -1}; // back basis vector
+
+	glm::vec3 world_up{v};
 
 	int nx{}; // x resolution
 	int ny{}; // y resolution
@@ -50,7 +52,7 @@ struct orthographic_camera : public camera
 
 struct perspective_camera : public camera
 {
-	float d{3.0f}; // depth
+	float d{2.0f}; // depth
 
 	ray generate_ray(int i, int j)
 	{
@@ -66,39 +68,67 @@ struct perspective_camera : public camera
 	}
 };
 
-struct intersection
+struct hit_information;
+
+struct material
 {
+	glm::vec3 k_a{0.1, 0.1, 0.1};
+	glm::vec3 k_d{0.5, 0.5, 0.5};
+};
+
+struct surface
+{
+	virtual hit_information intersect(ray& view_ray) = 0;
+	glm::vec3 color{1.0f, 0.0f, 0.0f};
+	material m{};
+};
+
+struct hit_information
+{
+	surface* s{nullptr};
 	int hits{};
-	glm::vec3 first_hit{};
-	int first_hit_t{};
-	int second_hit_t{};
+	// glm::vec3 first_hit{};
+	// float first_hit_t{999999};
+	// int second_hit_t{};
+	float t{999999};
 	glm::vec3 normal{};
 
 };
 
-struct sphere
+struct sphere : public surface
 {
-	glm::vec3 c{};
+	glm::vec3 c{0.0f, 0.0f, 0.0f};
 	float r{1.0f};
 
-	intersection intersect(ray& view_ray)
+	sphere()
 	{
-		intersection i{};
+	}
+
+	sphere(glm::vec3 c, float r, glm::vec3 col)
+		: c{c}
+		, r{r}
+	{
+		color=col;
+	}
+
+	hit_information intersect(ray& view_ray)
+	{
+		hit_information i{};
+		i.s = this;
 		glm::vec3 ec{view_ray.p-c};
 		float dd{glm::dot(view_ray.d, view_ray.d)};
 		float discriminant = glm::pow(glm::dot(view_ray.d, ec), 2) - dd * (glm::dot(ec, ec) - glm::pow(r, 2));
-		if (discriminant >= 0) // two solutions
+		if (discriminant >= 0) // at least one solutions
 		{
 			// ray goes through object
-			i.first_hit_t = (glm::dot(-view_ray.d, ec) + glm::sqrt(discriminant)) / dd;
-			i.first_hit = view_ray.evaluate(i.first_hit_t);
-			i.normal = 2.0f * (i.first_hit - c);
+			i.t = glm::min((glm::dot(-view_ray.d, ec) - glm::sqrt(discriminant)) / dd, (glm::dot(-view_ray.d, ec) + glm::sqrt(discriminant)) / dd);
+			// i.normal = 2.0f * (view_ray.evaluate(i.t) - c);
+			i.normal = (view_ray.evaluate(i.t)-c)/r;
 			i.hits = 2;
 
 			if (discriminant == 0) // one solution
 			{
 				// ray is tangent to object
-				i.second_hit_t = (glm::dot(-view_ray.d, ec) - glm::sqrt(discriminant)) / dd;
 				i.hits = 1;
 			}
 		}
@@ -106,6 +136,35 @@ struct sphere
 		// if ray misses object, do nothing
 
 		return i;
+	}
+};
+
+struct light
+{
+	glm::vec3 color{1.0f, 1.0f, 1.0f};
+	virtual glm::vec3 illuminate(ray& r, hit_information& hit) = 0;
+};
+
+struct ambient_light : public light
+{
+	glm::vec3 illuminate(ray& r, hit_information& hit)
+	{
+		return hit.s->m.k_a * hit.s->color * color;
+	}
+};
+
+struct point_light : public light
+{
+	glm::vec3 p{0.0f, 2.0f, 0.0f}; // light position
+	glm::vec3 illuminate(ray& r, hit_information& hit)
+	{
+		// glm::vec3 v{-r.d/glm::length(r.d)};
+		glm::vec3 x{r.evaluate(hit.t)};
+		float dist{glm::length(p - x)};
+		glm::vec3 l{(p-x)/dist};
+		glm::vec3 n{hit.normal};
+		glm::vec3 E{glm::max(0.0f,glm::dot(n,l))/(float)glm::pow(dist,2) * color};
+		return hit.s->m.k_d*hit.s->color*E;
 	}
 };
 

@@ -31,6 +31,9 @@ void application::init()
 	// // GLEW: load all OpenGL function pointers
 	glewInit();
 
+	glfwSwapInterval(1);
+	// glfwWindowHint(GLFW_SAMPLES, 4);
+
 	// build and compile the shaders
 	// ------------------------------------
 	// vertex shader
@@ -74,18 +77,29 @@ void application::init()
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
+	// float vertices[] = {
+	// 	// positions          // colors           // texture coords
+	// 	0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+	// 	0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+	// 	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+	// 	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+	// };
+	// unsigned int indices[] = {  
+	// 	0, 1, 3, // first triangle
+	// 	1, 2, 3  // second triangle
+	// };
 	float vertices[] = {
 		// positions          // colors           // texture coords
-		0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-		0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+		1.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+		1.0f, -1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+		-1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 	};
 	unsigned int indices[] = {  
 		0, 1, 3, // first triangle
 		1, 2, 3  // second triangle
 	};
-	
+
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -121,14 +135,28 @@ void application::init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	rt = new ray_tracer{};
+
+
 }
 
 void application::loop()
 {
 	// render loop
 	// -----------
+
+	float time{};
+
 	while (!glfwWindowShouldClose(window))
 	{
+		time = glfwGetTime();
+		deltaTime = time - lastTime;
+
+		if (deltaTime < maxPeriod)
+		{
+			continue;
+		}
+		lastTime = time;
+
 		// input
 		// -----
 		processInput(window);
@@ -138,7 +166,6 @@ void application::loop()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		rt->cam.e.z -= 0.01;
 		rt->update_image();
 
 		// bind Texture
@@ -181,8 +208,64 @@ void application::processInput(GLFWwindow *window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		rt->cam.e.z += 0.5f;
+		rt->cam.e -= rt->cam.w*deltaTime;
 	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		rt->cam.e -= rt->cam.u*deltaTime;
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		rt->cam.e += rt->cam.w*deltaTime;
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		rt->cam.e += rt->cam.u*deltaTime;
+	}
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x, rt->cam.w.y-deltaTime, rt->cam.w.z});
+		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
+		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x, rt->cam.w.y+deltaTime, rt->cam.w.z});
+		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
+		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	{
+		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x+deltaTime, rt->cam.w.y, rt->cam.w.z});
+		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
+		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
+	}
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	{
+		rt->cam.w = glm::normalize(glm::vec3{rt->cam.w.x-deltaTime, rt->cam.w.y, rt->cam.w.z});
+		rt->cam.u = glm::normalize(glm::cross(rt->cam.w, rt->cam.world_up));
+		rt->cam.v = glm::normalize(glm::cross(rt->cam.u, rt->cam.w));
+	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		rt->cam.e.y+=0.05f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+	{
+		rt->cam.e.y-=0.05f;
+	}
+	// if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	// {
+	// 	rt->cam.e.x -= 0.5f;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	// {
+	// 	rt->cam.e.z -= 0.5f;
+	// }
+	// if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	// {
+	// 	rt->cam.e.x += 0.5f;
+	// }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

@@ -18,8 +18,8 @@ private:
 	void processInput(GLFWwindow *window);
 	
 	// settings
-	const unsigned int SCR_WIDTH =  1080;
-	const unsigned int SCR_HEIGHT = 1080;
+	const unsigned int SCR_WIDTH =  1440;
+	const unsigned int SCR_HEIGHT = 1440;
 
 	const char *vertexShaderSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
@@ -50,6 +50,11 @@ private:
 	unsigned int VBO, VAO, EBO;
 
 	ray_tracer* rt;
+
+	const float maxFPS = 60;
+	const float maxPeriod = 1.0f / maxFPS;
+	float lastTime = 0.0;
+	float deltaTime{};
 
 public:
 	application();
