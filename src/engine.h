@@ -122,7 +122,10 @@ struct sphere : public surface
 		{
 			// ray goes through object
 			i.t = glm::min((glm::dot(-view_ray.d, ec) - glm::sqrt(discriminant)) / dd, (glm::dot(-view_ray.d, ec) + glm::sqrt(discriminant)) / dd);
-			// i.normal = 2.0f * (view_ray.evaluate(i.t) - c);
+			if (i.t < 0)
+			{
+				return i;
+			}
 			i.normal = (view_ray.evaluate(i.t)-c)/r;
 			i.hits = 2;
 
