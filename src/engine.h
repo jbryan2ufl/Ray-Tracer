@@ -5,6 +5,8 @@
 #include <utility>
 #include <iostream>
 
+#define INF 999999
+
 struct ray
 {
 	glm::vec3 p{}; // position
@@ -35,40 +37,46 @@ struct camera
 	int b{-1}; // bottom bound
 	int t{1}; // top bound
 
-	virtual ray generate_ray(int i, int j)=0;
-};
+	float d{1.3f};
 
-struct orthographic_camera : public camera
-{
-	ray generate_ray(int i, int j)
+	ray viewing_ray{};
+
+	bool ortho{false};
+
+	ray& generate_ray(int i, int j)
 	{
-		ray viewing_ray{};
+		if (ortho)
+		{
+			generate_ray_orthographic(i, j);
+		}
+		else
+		{
+			generate_ray_perspective(i, j);
+		}
+		return viewing_ray;
+	}
 
+	void generate_ray_orthographic(int i, int j)
+	{
 		float coord_u = l + (r - l) * (i + 0.5) / nx;
 		float coord_v = b + (t - b) * (j + 0.5) / ny;
 
 		viewing_ray.p = e + (u * coord_u) + (coord_v * v);
 		viewing_ray.d = -w;
-
-		return viewing_ray;
 	}
-};
 
-struct perspective_camera : public camera
-{
-	float d{1.0f}; // depth
-
-	ray generate_ray(int i, int j)
+	void generate_ray_perspective(int i, int j)
 	{
-		ray viewing_ray{};
-
 		float coord_u = l + (r - l) * (i + 0.5) / nx;
 		float coord_v = b + (t - b) * (j + 0.5) / ny;
 
 		viewing_ray.p = e;
 		viewing_ray.d = glm::normalize(-d * w + (u * coord_u) + (coord_v * v));
+	}
 
-		return viewing_ray;
+	void toggle_cam()
+	{
+		ortho = !ortho;
 	}
 };
 
@@ -93,10 +101,8 @@ struct hit_information
 {
 	surface* s{nullptr};
 	int hits{};
-	// glm::vec3 first_hit{};
-	// float first_hit_t{999999};
-	// int second_hit_t{};
-	float t{999999};
+
+	float t{INF};
 	glm::vec3 normal{};
 
 };

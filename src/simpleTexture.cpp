@@ -2,9 +2,8 @@
 
 int main()
 {
-	application* app{new application()};
-	callback=app;
-	app->loop();
-	app->close();
-	delete app;
+	application app{};
+	app.init();
+	app.loop();
+	app.close();
 }

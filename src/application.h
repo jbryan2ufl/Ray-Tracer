@@ -12,9 +12,6 @@
 #include "engine.h"
 #include "raytracer.h"
 
-void framebuffer_size_wrapper(GLFWwindow* window, int width, int height);
-void key_wrapper(GLFWwindow* window, int key, int scancode, int action, int mods);
-
 class application
 {
 private:
@@ -52,22 +49,21 @@ private:
 	unsigned int texture;
 	unsigned int VBO, VAO, EBO;
 
-	ray_tracer* rt;
+	ray_tracer rt{};
 
 	const float maxFPS = 60;
 	const float maxPeriod = 1.0f / maxFPS;
 	float lastTime = 0.0;
 	float deltaTime{};
 
+
 public:
+	void process_keys(int key, int scancode, int action, int mods);
+	void framebuffer_size(int width, int height);
 	application();
 	void init();
 	void loop();
 	void close();
-	void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
-
-static application* callback{nullptr};
 
 #endif
