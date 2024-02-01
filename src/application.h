@@ -9,6 +9,12 @@
 #include <iostream>
 #include <vector>
 
+#include <string>
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 #include "engine.h"
 #include "raytracer.h"
 
@@ -18,8 +24,8 @@ private:
 	void processInput(GLFWwindow *window);
 	
 	// settings
-	const unsigned int SCR_WIDTH =  1440;
-	const unsigned int SCR_HEIGHT = 1440;
+	const unsigned int SCR_WIDTH =  1364;
+	const unsigned int SCR_HEIGHT = 1024;
 
 	const char *vertexShaderSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
@@ -55,6 +61,8 @@ private:
 	const float maxPeriod = 1.0f / maxFPS;
 	float lastTime = 0.0;
 	float deltaTime{};
+
+	ImGuiIO* ioptr{};
 
 
 public:

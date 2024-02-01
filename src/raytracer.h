@@ -3,6 +3,7 @@
 
 #include <GL/glew.h>
 #include <vector>
+#include <list>
 
 #include "engine.h"
 
@@ -10,10 +11,11 @@ struct ray_tracer
 {
 	// Create the image (RGB Array) to be displayed
 	camera cam{};
-	bool ortho{false};
 
-	const int width  = 128; // keep it in powers of 2!
-	const int height = 128; // keep it in powers of 2!
+	int res_pow{6};
+
+	int width  = glm::pow(2, res_pow); // keep it in powers of 2!
+	int height = width; // keep it in powers of 2!
 	unsigned char* image{new unsigned char[width*height*3]};
 	std::vector<sphere> scene{};
 	std::vector<ambient_light> ambient_lights{};
@@ -31,14 +33,13 @@ struct ray_tracer
 		shiny.k_s=glm::vec3{1.0};
 		shiny.p=128;
 
-		scene.push_back(sphere{});
-		scene.push_back(sphere{glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}, shiny});
-		scene.push_back(sphere{glm::vec3{2, -1, 2}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}, shiny});
+		scene.push_back(sphere{"Sphere 1"});
+		scene.push_back(sphere{"Sphere 2", glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}, shiny});
+		scene.push_back(sphere{"Sphere 3", glm::vec3{2, -1, 2}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}, shiny});
 
 		ambient_lights.push_back(ambient_light{});
 		point_lights.push_back(point_light{glm::vec3{0.0f, 2.5f, -1.0f}});
 		point_lights.push_back(point_light{glm::vec3{0.0f, 0.5f, -3.0f}});
-		point_lights.push_back(point_light{glm::vec3{2, 2, 2}});
 	}
 
 	void update_image()
@@ -54,6 +55,10 @@ struct ray_tracer
 				hit_information closest_hit{};
 				for (auto& obj : scene)
 				{
+					if (obj.visible == false)
+					{
+						continue;
+					}
 					hit_information hit{obj.intersect(r)};
 					if (hit.hits != 0)
 					{
@@ -88,6 +93,17 @@ struct ray_tracer
 		{
 			std::cout << "Failed to load texture" << std::endl;
 		}
+	}
+
+	void resize()
+	{
+		delete[] image;
+
+		width = glm::pow(2, res_pow);
+		height = width;
+		cam.nx = width;
+		cam.ny=height;
+		image = new unsigned char[width*height*3];
 	}
 
 	glm::vec3 shader(ray& r, hit_information& hit)

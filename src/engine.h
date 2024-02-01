@@ -80,22 +80,7 @@ struct camera
 	}
 };
 
-struct hit_information;
-
-struct material
-{
-	glm::vec3 k_a{0.05};
-	glm::vec3 k_d{1.0};
-	glm::vec3 k_s{0.3};
-	int p{8};
-};
-
-struct surface
-{
-	virtual hit_information intersect(ray& view_ray) = 0;
-	glm::vec3 color{1.0f, 0.0f, 0.0f};
-	material m{};
-};
+struct surface;
 
 struct hit_information
 {
@@ -107,8 +92,27 @@ struct hit_information
 
 };
 
+struct material
+{
+	glm::vec3 k_a{0.05};
+	glm::vec3 k_d{1.0};
+	glm::vec3 k_s{0.3};
+	int p{8};
+};
+
+struct surface
+{
+	bool visible{true};
+	glm::vec3 color{1.0f, 0.0f, 0.0f};
+	material m{};
+
+	virtual hit_information intersect(ray& view_ray) = 0;	
+};
+
 struct sphere : public surface
 {
+	const char* name{};
+
 	glm::vec3 c{0.0f, 0.0f, 0.0f};
 	float r{1.0f};
 
@@ -116,9 +120,15 @@ struct sphere : public surface
 	{
 	}
 
-	sphere(glm::vec3 c, float r, glm::vec3 col, material mat)
+	sphere(const char* name)
+		: name{name}
+	{
+	}
+
+	sphere(const char* name, glm::vec3 c, float r, glm::vec3 col, material mat)
 		: c{c}
 		, r{r}
+		, name{name}
 	{
 		color=col;
 		m=mat;

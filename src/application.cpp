@@ -75,10 +75,22 @@ void application::init()
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+	ioptr=&io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init();
+
+	
+
 	float vertices[] = {
 		// positions          // colors           // texture coords
-		1.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-		1.0f, -1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+		0.5f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+		0.5f, -1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
 		-1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
 		-1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 	};
@@ -131,6 +143,45 @@ void application::loop()
 
 	while (!glfwWindowShouldClose(window))
 	{
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGui::SetNextWindowBgAlpha(1.0f);
+		ImGui::SetNextWindowPos(ImVec2{SCR_WIDTH*3/4,0});
+		ImGui::SetNextWindowSize(ImVec2{SCR_WIDTH*1/4,SCR_HEIGHT});
+
+		ImGui::Begin("Settings", 0, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
+		{
+			if (ImGui::CollapsingHeader("Camera Settings"))
+			{
+				ImGui::RadioButton("Perspective", (int*)&rt.cam.ortho, 0);
+				ImGui::RadioButton("Orthographic", (int*)&rt.cam.ortho, 1);
+				ImGui::SliderInt("Resolution", &rt.res_pow, 4, 10);
+				if (ImGui::Button("Resize"))
+				{
+					rt.resize();
+				}
+			}
+			if (ImGui::CollapsingHeader("Scene Objects"))
+			{
+				for (auto& obj : rt.scene)
+				{
+					ImGui::Checkbox(obj.name, &obj.visible);
+					ImGui::SameLine();
+					ImGui::SliderFloat3(obj.name, (float*)&obj.c, -5, 5);
+				}
+			}
+
+			if (ImGui::CollapsingHeader("Light"))
+			{
+				ImGui::SliderFloat3("Point Light 1", (float*)&rt.point_lights[0].p, -5, 5);
+				ImGui::SliderFloat3("Point Light 2", (float*)&rt.point_lights[1].p, -5, 5);
+			}
+		}
+		ImGui::End();
+		// ImGui::ShowDemoWindow();
+		ImGui::Render();
+
 		time = glfwGetTime();
 		deltaTime = time - lastTime;
 
@@ -158,6 +209,8 @@ void application::loop()
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
