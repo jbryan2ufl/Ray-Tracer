@@ -156,7 +156,7 @@ void application::loop()
 			{
 				ImGui::RadioButton("Perspective", (int*)&rt.cam.ortho, 0);
 				ImGui::RadioButton("Orthographic", (int*)&rt.cam.ortho, 1);
-				ImGui::SliderInt("Resolution", &rt.res_pow, 4, 10);
+				ImGui::SliderInt("Resolution", &rt.res_pow, 3, 10);
 				if (ImGui::Button("Resize"))
 				{
 					rt.resize();
@@ -164,18 +164,50 @@ void application::loop()
 			}
 			if (ImGui::CollapsingHeader("Scene Objects"))
 			{
-				for (auto& obj : rt.scene)
+				if (ImGui::Button("+##sphere"))
 				{
-					ImGui::Checkbox(obj.name, &obj.visible);
-					ImGui::SameLine();
-					ImGui::SliderFloat3(obj.name, (float*)&obj.c, -5, 5);
+					rt.scene.push_back(sphere{});
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("-##sphere"))
+				{
+					rt.scene.pop_back();
+				}
+				for (int i{}; i < rt.scene.size(); i++)
+				{
+					std::string str{std::to_string(i)};
+					if (ImGui::TreeNode(("Sphere "+str).c_str()))
+					{
+						ImGui::Checkbox(("##sphere"+str).c_str(), &rt.scene[i].visible);
+						ImGui::SameLine();
+						ImGui::SliderFloat3(("##sphere"+str).c_str(), (float*)&rt.scene[i].c, -5, 5);
+						ImGui::TreePop();
+					}
 				}
 			}
 
 			if (ImGui::CollapsingHeader("Light"))
 			{
-				ImGui::SliderFloat3("Point Light 1", (float*)&rt.point_lights[0].p, -5, 5);
-				ImGui::SliderFloat3("Point Light 2", (float*)&rt.point_lights[1].p, -5, 5);
+				if (ImGui::Button("+##light"))
+				{
+					rt.point_lights.push_back(point_light{});
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("-##light"))
+				{
+					rt.scene.pop_back();
+				}
+				for (int i{}; i < rt.point_lights.size(); i++)
+				{
+					std::string str{std::to_string(i)};
+					if (ImGui::TreeNode(("Light "+str).c_str()))
+					{
+						ImGui::Checkbox(("##light"+str).c_str(), &rt.point_lights[i].visible);
+						ImGui::SameLine();
+						ImGui::SliderFloat3(("##light"+str).c_str(), (float*)&rt.point_lights[i].p, -5, 5);
+						ImGui::TreePop();
+					}
+				}
 			}
 		}
 		ImGui::End();

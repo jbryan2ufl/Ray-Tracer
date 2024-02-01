@@ -19,8 +19,6 @@ struct ray
 
 struct camera
 {
-	bool active{false};
-
 	glm::vec3 e{0, 0, -5}; // viewpoint
 
 	glm::vec3 u{1, 0, 0}; // right basis vector
@@ -109,10 +107,39 @@ struct surface
 	virtual hit_information intersect(ray& view_ray) = 0;	
 };
 
+struct simple_sphere
+{
+	glm::vec3* c;
+	glm::vec3* color;
+	float r{0.1f};
+
+	simple_sphere()
+	{
+	}
+	simple_sphere(glm::vec3* c, glm::vec3* color)
+		: c{c}
+		, color{color}
+	{
+	}
+
+	bool intersect(ray& view_ray)
+	{
+		glm::vec3 ec{view_ray.p-*c};
+		float dd{glm::dot(view_ray.d, view_ray.d)};
+		float discriminant = glm::pow(glm::dot(view_ray.d, ec), 2) - dd * (glm::dot(ec, ec) - glm::pow(r, 2));
+		if (discriminant >= 0) // at least one solutions
+		{
+			return true;
+		}
+
+		// if ray misses object, do nothing
+
+		return false;
+	}
+};
+
 struct sphere : public surface
 {
-	const char* name{};
-
 	glm::vec3 c{0.0f, 0.0f, 0.0f};
 	float r{1.0f};
 
@@ -120,15 +147,9 @@ struct sphere : public surface
 	{
 	}
 
-	sphere(const char* name)
-		: name{name}
-	{
-	}
-
-	sphere(const char* name, glm::vec3 c, float r, glm::vec3 col, material mat)
+	sphere(glm::vec3 c, float r, glm::vec3 col, material mat)
 		: c{c}
 		, r{r}
-		, name{name}
 	{
 		color=col;
 		m=mat;
@@ -168,6 +189,7 @@ struct sphere : public surface
 struct light
 {
 	glm::vec3 color{1.0f, 1.0f, 1.0f};
+	bool visible{true};
 	// virtual glm::vec3 illuminate(ray& r, hit_information& hit);
 };
 
@@ -181,8 +203,13 @@ struct ambient_light : public light
 
 struct point_light : public light
 {
+	simple_sphere sph{&p, &color};
+
 	glm::vec3 p{}; // light position
 
+	point_light()
+	{
+	}
 	point_light(glm::vec3 pos)
 		: p{pos}
 	{

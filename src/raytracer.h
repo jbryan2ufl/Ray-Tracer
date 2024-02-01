@@ -33,13 +33,15 @@ struct ray_tracer
 		shiny.k_s=glm::vec3{1.0};
 		shiny.p=128;
 
-		scene.push_back(sphere{"Sphere 1"});
-		scene.push_back(sphere{"Sphere 2", glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}, shiny});
-		scene.push_back(sphere{"Sphere 3", glm::vec3{2, -1, 2}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}, shiny});
+		// scene.push_back(sphere{});
+		// scene.push_back(sphere{});
+		// scene.push_back(sphere{});
+		// scene.push_back(sphere{glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}, shiny});
+		// scene.push_back(sphere{glm::vec3{2, -1, 2}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}, shiny});
 
 		ambient_lights.push_back(ambient_light{});
-		point_lights.push_back(point_light{glm::vec3{0.0f, 2.5f, -1.0f}});
-		point_lights.push_back(point_light{glm::vec3{0.0f, 0.5f, -3.0f}});
+		// point_lights.push_back(point_light{glm::vec3{0.0f, 2.5f, -1.0f}});
+		// point_lights.push_back(point_light{glm::vec3{0.0f, 0.5f, -3.0f}});
 	}
 
 	void update_image()
@@ -51,6 +53,17 @@ struct ray_tracer
 				int idx = (i * width + j) * 3;
 
 				ray r{cam.generate_ray(j, i)};
+
+				// for (auto& l : point_lights)
+				// {
+				// 	if (l.sph.intersect(r))
+				// 	{
+				// 		image[idx+0] = l.color.r * 255;
+				// 		image[idx+1] = l.color.g * 255;
+				// 		image[idx+2] = l.color.b * 255;
+				// 		return;
+				// 	}
+				// }
 
 				hit_information closest_hit{};
 				for (auto& obj : scene)
@@ -111,11 +124,19 @@ struct ray_tracer
 		glm::vec3 color{};
 		for (auto& l : point_lights)
 		{
+			if (l.visible == false)
+			{
+				continue;
+			}
 			color += l.illuminate(r, hit, scene);
 			// color += l.specular(r, hit);
 		}
 		for (auto& l : ambient_lights)
 		{
+			if (l.visible == false)
+			{
+				continue;
+			}
 			color += l.illuminate(r, hit);
 		}
 		return color;
