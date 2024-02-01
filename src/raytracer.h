@@ -17,7 +17,7 @@ struct ray_tracer
 	int width  = glm::pow(2, res_pow); // keep it in powers of 2!
 	int height = width; // keep it in powers of 2!
 	unsigned char* image{new unsigned char[width*height*3]};
-	std::vector<sphere> scene{};
+	std::vector<surface*> scene{};
 	std::vector<ambient_light> ambient_lights{};
 	std::vector<point_light> point_lights{};
 
@@ -44,6 +44,27 @@ struct ray_tracer
 		// point_lights.push_back(point_light{glm::vec3{0.0f, 0.5f, -3.0f}});
 	}
 
+	hit_information calculate_hit(ray& r)
+	{
+		hit_information h{};
+		for (auto& obj : scene)
+		{
+			if (obj->visible == false)
+			{
+				continue;
+			}
+			hit_information hit{obj->intersect(r)};
+			if (hit.hits != 0)
+			{
+				if (hit.t < h.t)
+				{
+					h = hit;
+				}
+			}
+		}
+		return h;
+	}
+
 	void update_image()
 	{
 		for(int i = 0; i < height; i++)
@@ -65,32 +86,21 @@ struct ray_tracer
 				// 	}
 				// }
 
-				hit_information closest_hit{};
-				for (auto& obj : scene)
-				{
-					if (obj.visible == false)
-					{
-						continue;
-					}
-					hit_information hit{obj.intersect(r)};
-					if (hit.hits != 0)
-					{
-						if (hit.t < closest_hit.t)
-						{
-							closest_hit = hit;
-						}
-					}
-				}
+				hit_information closest_hit{calculate_hit(r)};
+				
+				// glm::vec3 color{get_hit_color(r, closest_hit)};
 				glm::vec3 color{};
+				int depth{};
 				if (closest_hit.hits != 0)
 				{
-					color=shader(r, closest_hit);
+					color=shader(r, closest_hit, depth);
 				}
 				else
 				{
 					color=glm::vec3{0, 0, 0}; // background color
 				}
 				color = glm::clamp(color, 0.0f, 1.0f);
+				
 				image[idx+0] = color.r * 255;
 				image[idx+1] = color.g * 255;
 				image[idx+2] = color.b * 255;
@@ -119,7 +129,7 @@ struct ray_tracer
 		image = new unsigned char[width*height*3];
 	}
 
-	glm::vec3 shader(ray& r, hit_information& hit)
+	glm::vec3 shader(ray& r, hit_information& hit, int& depth)
 	{
 		glm::vec3 color{};
 		for (auto& l : point_lights)
@@ -138,6 +148,22 @@ struct ray_tracer
 				continue;
 			}
 			color += l.illuminate(r, hit);
+		}
+
+
+		if (depth > 0)
+		{
+			return color;
+		}
+		depth++;
+
+		// mirror reflection
+		glm::vec3 l{glm::normalize(r.d-2.0f*hit.normal*glm::dot(r.d, hit.normal))};
+		ray reflection{r.evaluate(hit.t)+0.1f*l, l};
+		hit_information reflection_hit{calculate_hit(reflection)};
+		if (reflection_hit.hits != 0)
+		{
+			color += shader(reflection, reflection_hit, depth)*reflection_hit.s->m.k_s;
 		}
 		return color;
 	}

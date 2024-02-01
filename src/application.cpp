@@ -164,23 +164,58 @@ void application::loop()
 			}
 			if (ImGui::CollapsingHeader("Scene Objects"))
 			{
+				ImGui::Text("Sphere: ");
+				ImGui::SameLine();
 				if (ImGui::Button("+##sphere"))
 				{
-					rt.scene.push_back(sphere{});
+					rt.scene.push_back(new sphere{});
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("-##sphere"))
 				{
+					delete rt.scene.back();
 					rt.scene.pop_back();
 				}
+
+
+
+				ImGui::Text("Triangle: ");
+				ImGui::SameLine();
+				if (ImGui::Button("+##tri"))
+				{
+					rt.scene.push_back(new triangle{});
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("-##tri"))
+				{
+					delete rt.scene.back();
+					rt.scene.pop_back();
+				}
+
+
+
 				for (int i{}; i < rt.scene.size(); i++)
 				{
 					std::string str{std::to_string(i)};
-					if (ImGui::TreeNode(("Sphere "+str).c_str()))
+					if (ImGui::TreeNode(dynamic_cast<sphere*>(rt.scene[i]) ? ("Sphere "+str).c_str() : ("Triangle "+str).c_str()))
 					{
-						ImGui::Checkbox(("##sphere"+str).c_str(), &rt.scene[i].visible);
-						ImGui::SameLine();
-						ImGui::SliderFloat3(("##sphere"+str).c_str(), (float*)&rt.scene[i].c, -5, 5);
+						if (dynamic_cast<sphere*>(rt.scene[i]))
+						{
+							ImGui::Checkbox(("##sphere"+str).c_str(), &rt.scene[i]->visible);
+							ImGui::SameLine();
+							ImGui::SliderFloat3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->center, -5, 5);
+							ImGui::ColorPicker3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->color);
+						}
+						else
+						{
+							triangle* t = dynamic_cast<triangle*>(rt.scene[i]);
+							ImGui::Checkbox(("##tri"+str).c_str(), &rt.scene[i]->visible);
+							ImGui::SameLine();
+							ImGui::SliderFloat3(("##tri1"+str).c_str(), (float*)&t->p1, -5, 5);
+							ImGui::SliderFloat3(("##tri2"+str).c_str(), (float*)&t->p2, -5, 5);
+							ImGui::SliderFloat3(("##tri3"+str).c_str(), (float*)&t->p3, -5, 5);
+							ImGui::ColorPicker3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->color);
+						}
 						ImGui::TreePop();
 					}
 				}
@@ -195,6 +230,7 @@ void application::loop()
 				ImGui::SameLine();
 				if (ImGui::Button("-##light"))
 				{
+					delete rt.scene.back();
 					rt.scene.pop_back();
 				}
 				for (int i{}; i < rt.point_lights.size(); i++)

@@ -92,9 +92,10 @@ struct hit_information
 
 struct material
 {
+	// glm::vec3 k_a{1.0};
 	glm::vec3 k_a{0.05};
 	glm::vec3 k_d{1.0};
-	glm::vec3 k_s{0.3};
+	glm::vec3 k_s{1.0};
 	int p{8};
 };
 
@@ -103,6 +104,7 @@ struct surface
 	bool visible{true};
 	glm::vec3 color{1.0f, 0.0f, 0.0f};
 	material m{};
+	glm::vec3 center{};
 
 	virtual hit_information intersect(ray& view_ray) = 0;	
 };
@@ -140,7 +142,6 @@ struct simple_sphere
 
 struct sphere : public surface
 {
-	glm::vec3 c{0.0f, 0.0f, 0.0f};
 	float r{1.0f};
 
 	sphere()
@@ -148,9 +149,9 @@ struct sphere : public surface
 	}
 
 	sphere(glm::vec3 c, float r, glm::vec3 col, material mat)
-		: c{c}
-		, r{r}
+		: r{r}
 	{
+		center=c;
 		color=col;
 		m=mat;
 	}
@@ -159,7 +160,7 @@ struct sphere : public surface
 	{
 		hit_information i{};
 		i.s = this;
-		glm::vec3 ec{view_ray.p-c};
+		glm::vec3 ec{view_ray.p-center};
 		float dd{glm::dot(view_ray.d, view_ray.d)};
 		float discriminant = glm::pow(glm::dot(view_ray.d, ec), 2) - dd * (glm::dot(ec, ec) - glm::pow(r, 2));
 		if (discriminant >= 0) // at least one solutions
@@ -170,7 +171,7 @@ struct sphere : public surface
 			{
 				return i;
 			}
-			i.normal = (view_ray.evaluate(i.t)-c)/r;
+			i.normal = (view_ray.evaluate(i.t)-center)/r;
 			i.hits = 2;
 
 			if (discriminant == 0) // one solution
@@ -183,6 +184,46 @@ struct sphere : public surface
 		// if ray misses object, do nothing
 
 		return i;
+	}
+};
+
+struct triangle : public surface
+{
+	glm::vec3 p1{};
+	glm::vec3 p2{};
+	glm::vec3 p3{};
+
+	triangle()
+	{
+	}
+
+	hit_information intersect(ray& view_ray)
+	{
+		hit_information h{};
+		h.s=this;
+		h.normal=glm::normalize(glm::cross(p1, p2));
+		if (glm::dot(h.normal, view_ray.d) == 0)
+		{
+			return h;
+		}
+		h.t=glm::dot((p1-view_ray.p), h.normal)/glm::dot(h.normal, view_ray.d);
+		glm::vec3 x{view_ray.evaluate(h.t)};
+		if (glm::dot(glm::cross(p2-p1,x-p1), h.normal) <= 0)
+		{
+			return h;
+		}
+		if (glm::dot(glm::cross(p3-p2,x-p2), h.normal) <= 0)
+		{
+			return h;
+		}
+		// std::cout << p1.x;
+		if (glm::dot(glm::cross(p1-p3,x-p3), h.normal) <= 0)
+		{
+			return h;
+		}
+		h.hits++;
+		// std::cout << p1.x;
+		return h;
 	}
 };
 
@@ -215,7 +256,7 @@ struct point_light : public light
 	{
 	}
 
-	glm::vec3 illuminate(ray& r, hit_information& hit, std::vector<sphere>& scene)
+	glm::vec3 illuminate(ray& r, hit_information& hit, std::vector<surface*>& scene)
 	{
 		glm::vec3 x{r.evaluate(hit.t)};
 		float dist{glm::length(p - x)};
@@ -224,11 +265,11 @@ struct point_light : public light
 		hit_information h;
 		for (auto& obj : scene)
 		{
-			if (hit.s == &obj)
+			if (hit.s == obj)
 			{
 				continue;
 			}
-			h = obj.intersect(light_ray);
+			h = obj->intersect(light_ray);
 			if (h.hits != 0)
 			{
 				return glm::vec3{0, 0, 0};
