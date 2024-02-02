@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <utility>
 #include <iostream>
+#include <vector>
 
 #define INF 999999
 
@@ -93,10 +94,11 @@ struct hit_information
 struct material
 {
 	// glm::vec3 k_a{1.0};
-	glm::vec3 k_a{0.05};
-	glm::vec3 k_d{1.0};
-	glm::vec3 k_s{1.0};
+	float k_a{0.1};
+	float k_d{0.8};
+	float k_s{0.3};
 	int p{8};
+	bool glazed{false};
 };
 
 struct surface
@@ -189,9 +191,9 @@ struct sphere : public surface
 
 struct triangle : public surface
 {
-	glm::vec3 p1{};
-	glm::vec3 p2{};
-	glm::vec3 p3{};
+	glm::vec3 p1{-1, 0, -1};
+	glm::vec3 p2{-1, 0, 1};
+	glm::vec3 p3{1, 0, 1};
 
 	triangle()
 	{
@@ -201,28 +203,54 @@ struct triangle : public surface
 	{
 		hit_information h{};
 		h.s=this;
-		h.normal=glm::normalize(glm::cross(p1, p2));
-		if (glm::dot(h.normal, view_ray.d) == 0)
+		glm::vec3 normal=glm::normalize(glm::cross(p1, p2));
+
+		// float denom{glm::dot(h.normal, view_ray.d)};
+
+		// // parallel rays
+		// if (denom == 0)
+		// {
+		// 	return h;
+		// }
+
+		
+		// h.t=glm::dot((p1-view_ray.p), h.normal) / denom;
+		
+		// // calculate contact point
+		// glm::vec3 x{view_ray.evaluate(h.t)};
+		
+		
+		// if (glm::dot(glm::cross(p2-p1,x-p1), h.normal) <= 0)
+		// {
+		// 	return h;
+		// }
+		// if (glm::dot(glm::cross(p3-p2,x-p2), h.normal) <= 0)
+		// {
+		// 	return h;
+		// }
+		// if (glm::dot(glm::cross(p1-p3,x-p3), h.normal) <= 0)
+		// {
+		// 	return h;
+		// }
+		// h.hits++;
+
+		h.t=glm::dot(p1-view_ray.p, normal)/glm::dot(normal, view_ray.d);
+		if (h.t < 0)
 		{
 			return h;
 		}
-		h.t=glm::dot((p1-view_ray.p), h.normal)/glm::dot(h.normal, view_ray.d);
 		glm::vec3 x{view_ray.evaluate(h.t)};
-		if (glm::dot(glm::cross(p2-p1,x-p1), h.normal) <= 0)
+		float e1{glm::dot(glm::cross(p2-p1, x-p1), normal)};
+		float e2{glm::dot(glm::cross(p3-p2, x-p2), normal)};
+		float e3{glm::dot(glm::cross(p1-p3, x-p3), normal)};
+
+		if (e1 <= 0 || e2 <= 0 || e3 <= 0)
 		{
 			return h;
 		}
-		if (glm::dot(glm::cross(p3-p2,x-p2), h.normal) <= 0)
-		{
-			return h;
-		}
-		// std::cout << p1.x;
-		if (glm::dot(glm::cross(p1-p3,x-p3), h.normal) <= 0)
-		{
-			return h;
-		}
-		h.hits++;
-		// std::cout << p1.x;
+		h.normal=normal;
+		h.hits=1;
+
 		return h;
 	}
 };
@@ -244,9 +272,9 @@ struct ambient_light : public light
 
 struct point_light : public light
 {
-	simple_sphere sph{&p, &color};
+	// simple_sphere sph{&p, &color};
 
-	glm::vec3 p{}; // light position
+	glm::vec3 p{0, 2, 0}; // light position
 
 	point_light()
 	{
@@ -261,23 +289,37 @@ struct point_light : public light
 		glm::vec3 x{r.evaluate(hit.t)};
 		float dist{glm::length(p - x)};
 		glm::vec3 l{(p-x)/dist}; // normalized ray pointing to light
-		ray light_ray{x+0.1f*l, l};
+		ray light_ray{x+0.01f*l, l};
 		hit_information h;
 		for (auto& obj : scene)
 		{
-			if (hit.s == obj)
+			if (hit.s == obj || obj->visible==false)
 			{
 				continue;
 			}
+
+
 			h = obj->intersect(light_ray);
+
+			// shadows
 			if (h.hits != 0)
 			{
 				return glm::vec3{0, 0, 0};
 			}
 		}
 		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l)) * color /(float)glm::pow(dist,2)}; // /(float)glm::pow(dist,2)
-		glm::vec3 h2{glm::normalize(l-r.d)};
-		return hit.s->m.k_s*(float)glm::pow(glm::max(0.0f,glm::dot(hit.normal,h2)), hit.s->m.p)*E*color+hit.s->m.k_d*hit.s->color*E;
+		// glm::vec3 v2{glm::normalize(l-r.d)};
+
+		glm::vec3 Ld = hit.s->m.k_d*hit.s->color*E;
+
+		// phong model
+		glm::vec3 vR{-glm::normalize(2*glm::dot(hit.normal, l)*hit.normal-l)};
+		glm::vec3 vE{r.d};
+		glm::vec3 Ls = hit.s->m.k_s*color*(float)glm::pow(glm::max(0.0f, glm::dot(vE, vR)), hit.s->m.p);
+		
+		// blinn phong model
+		// glm::vec3 Ls = hit.s->m.k_s*(float)glm::pow(glm::max(0.0f,glm::dot(hit.normal,v2)), hit.s->m.p)*E*color;
+		return Ld+Ls;
 	}
 };
 

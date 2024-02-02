@@ -12,7 +12,7 @@ struct ray_tracer
 	// Create the image (RGB Array) to be displayed
 	camera cam{};
 
-	int res_pow{6};
+	int res_pow{7};
 
 	int width  = glm::pow(2, res_pow); // keep it in powers of 2!
 	int height = width; // keep it in powers of 2!
@@ -26,22 +26,11 @@ struct ray_tracer
 		cam.nx=width;
 		cam.ny=height;
 
-		material matte{};
-		matte.k_s=glm::vec3{0.3};
-
-		material shiny{};
-		shiny.k_s=glm::vec3{1.0};
-		shiny.p=128;
-
-		// scene.push_back(sphere{});
-		// scene.push_back(sphere{});
-		// scene.push_back(sphere{});
-		// scene.push_back(sphere{glm::vec3{0, 0, -2}, 0.25f, glm::vec3{0.0f, 0.0f, 1.0f}, shiny});
-		// scene.push_back(sphere{glm::vec3{2, -1, 2}, 1.5f, glm::vec3{0.0f, 1.0f, 0.0f}, shiny});
+		scene.push_back(new sphere{});
+		scene.push_back(new triangle{});
 
 		ambient_lights.push_back(ambient_light{});
-		// point_lights.push_back(point_light{glm::vec3{0.0f, 2.5f, -1.0f}});
-		// point_lights.push_back(point_light{glm::vec3{0.0f, 0.5f, -3.0f}});
+		point_lights.push_back(point_light{});
 	}
 
 	hit_information calculate_hit(ray& r)
@@ -151,19 +140,23 @@ struct ray_tracer
 		}
 
 
-		if (depth > 0)
+		if (depth > 1)
 		{
 			return color;
 		}
 		depth++;
 
 		// mirror reflection
-		glm::vec3 l{glm::normalize(r.d-2.0f*hit.normal*glm::dot(r.d, hit.normal))};
-		ray reflection{r.evaluate(hit.t)+0.1f*l, l};
-		hit_information reflection_hit{calculate_hit(reflection)};
-		if (reflection_hit.hits != 0)
+		if (hit.s->m.glazed == true)
 		{
-			color += shader(reflection, reflection_hit, depth)*reflection_hit.s->m.k_s;
+			glm::vec3 l{glm::normalize(r.d-2.0f*hit.normal*glm::dot(r.d, hit.normal))};
+			ray reflection{r.evaluate(hit.t)+0.1f*l, l};
+			hit_information reflection_hit{calculate_hit(reflection)};
+			float dist{glm::length(r.p - reflection.p)};
+			if (reflection_hit.hits != 0)
+			{
+				color += shader(reflection, reflection_hit, depth)*reflection_hit.s->m.k_s;
+			}
 		}
 		return color;
 	}

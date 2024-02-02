@@ -78,8 +78,8 @@ void application::init()
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+	// io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	// io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 	ioptr=&io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -161,61 +161,73 @@ void application::loop()
 				{
 					rt.resize();
 				}
+
+				ImGui::SeparatorText("Camera Position");
+				ImGui::Text("x: %f\ny: %f\nz: %f", rt.cam.e.x, rt.cam.e.y, rt.cam.e.z);
+				ImGui::SeparatorText("Camera Basis");
+				ImGui::Text("x: %f y: %f z: %f", rt.cam.u.x, rt.cam.u.y, rt.cam.u.z);
+				ImGui::Text("x: %f y: %f z: %f", rt.cam.v.x, rt.cam.v.y, rt.cam.v.z);
+				ImGui::Text("x: %f y: %f z: %f", rt.cam.w.x, rt.cam.w.y, rt.cam.w.z);
 			}
+			
 			if (ImGui::CollapsingHeader("Scene Objects"))
 			{
-				ImGui::Text("Sphere: ");
-				ImGui::SameLine();
-				if (ImGui::Button("+##sphere"))
+				if (ImGui::Button("Add Sphere"))
 				{
 					rt.scene.push_back(new sphere{});
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("-##sphere"))
-				{
-					delete rt.scene.back();
-					rt.scene.pop_back();
-				}
-
-
-
-				ImGui::Text("Triangle: ");
-				ImGui::SameLine();
-				if (ImGui::Button("+##tri"))
+				if (ImGui::Button("Add Triangle"))
 				{
 					rt.scene.push_back(new triangle{});
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("-##tri"))
+				if (ImGui::Button("Remove Last"))
 				{
-					delete rt.scene.back();
-					rt.scene.pop_back();
+					if (rt.scene.size() > 0)
+					{
+						delete rt.scene.back();
+						rt.scene.pop_back();
+					}
 				}
-
-
 
 				for (int i{}; i < rt.scene.size(); i++)
 				{
 					std::string str{std::to_string(i)};
+					ImGui::Checkbox(("##obj"+str).c_str(), &rt.scene[i]->visible);
+					ImGui::SameLine();
 					if (ImGui::TreeNode(dynamic_cast<sphere*>(rt.scene[i]) ? ("Sphere "+str).c_str() : ("Triangle "+str).c_str()))
 					{
 						if (dynamic_cast<sphere*>(rt.scene[i]))
 						{
-							ImGui::Checkbox(("##sphere"+str).c_str(), &rt.scene[i]->visible);
+							ImGui::ColorEdit3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->color);
+							ImGui::Text("center:");
 							ImGui::SameLine();
 							ImGui::SliderFloat3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->center, -5, 5);
-							ImGui::ColorPicker3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->color);
 						}
 						else
 						{
 							triangle* t = dynamic_cast<triangle*>(rt.scene[i]);
-							ImGui::Checkbox(("##tri"+str).c_str(), &rt.scene[i]->visible);
+							ImGui::ColorEdit3(("##tri"+str).c_str(), (float*)&rt.scene[i]->color);
+							ImGui::Text("p1:");
 							ImGui::SameLine();
 							ImGui::SliderFloat3(("##tri1"+str).c_str(), (float*)&t->p1, -5, 5);
+							ImGui::Text("p2:");
+							ImGui::SameLine();
 							ImGui::SliderFloat3(("##tri2"+str).c_str(), (float*)&t->p2, -5, 5);
+							ImGui::Text("p3:");
+							ImGui::SameLine();
 							ImGui::SliderFloat3(("##tri3"+str).c_str(), (float*)&t->p3, -5, 5);
-							ImGui::ColorPicker3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->color);
 						}
+						if (ImGui::CollapsingHeader("Material"))
+						{
+							ImGui::SliderFloat(("Ambeint##sphere"+str).c_str(), &rt.scene[i]->m.k_a, 0, 1);
+							ImGui::SliderFloat(("Diffuse##sphere"+str).c_str(), &rt.scene[i]->m.k_d, 0, 1);
+							ImGui::SliderFloat(("Specular##sphere"+str).c_str(), &rt.scene[i]->m.k_s, 0, 1);
+							ImGui::SliderInt(("Specular Power##sphere"+str).c_str(), &rt.scene[i]->m.p, 1, 100);
+							ImGui::Checkbox("Glazed", &rt.scene[i]->m.glazed);
+						}
+						ImGui::NewLine();
 						ImGui::TreePop();
 					}
 				}
@@ -223,23 +235,26 @@ void application::loop()
 
 			if (ImGui::CollapsingHeader("Light"))
 			{
-				if (ImGui::Button("+##light"))
+				if (ImGui::Button("Add Point Light"))
 				{
 					rt.point_lights.push_back(point_light{});
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("-##light"))
+				if (ImGui::Button("Remove Last"))
 				{
-					delete rt.scene.back();
-					rt.scene.pop_back();
+					if (rt.point_lights.size() > 0)
+					{
+						rt.point_lights.pop_back();
+					}
 				}
 				for (int i{}; i < rt.point_lights.size(); i++)
 				{
 					std::string str{std::to_string(i)};
+					ImGui::Checkbox(("##light"+str).c_str(), &rt.point_lights[i].visible);
+					ImGui::SameLine();
 					if (ImGui::TreeNode(("Light "+str).c_str()))
 					{
-						ImGui::Checkbox(("##light"+str).c_str(), &rt.point_lights[i].visible);
-						ImGui::SameLine();
+						ImGui::ColorEdit3(("##light"+str).c_str(), (float*)&rt.point_lights[i].color);
 						ImGui::SliderFloat3(("##light"+str).c_str(), (float*)&rt.point_lights[i].p, -5, 5);
 						ImGui::TreePop();
 					}

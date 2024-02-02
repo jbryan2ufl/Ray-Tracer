@@ -57,7 +57,7 @@ private:
 
 	ray_tracer rt{};
 
-	const float maxFPS = 15;
+	const float maxFPS = 60;
 	const float maxPeriod = 1.0f / maxFPS;
 	float lastTime = 0.0;
 	float deltaTime{};
