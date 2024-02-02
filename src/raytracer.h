@@ -5,6 +5,8 @@
 #include <vector>
 #include <list>
 
+#include <stb_image_write.h>
+
 #include "engine.h"
 
 struct ray_tracer
@@ -13,6 +15,7 @@ struct ray_tracer
 	camera cam{};
 
 	int res_pow{7};
+	int export_res_pow{7};
 
 	int width  = glm::pow(2, res_pow); // keep it in powers of 2!
 	int height = width; // keep it in powers of 2!
@@ -107,11 +110,32 @@ struct ray_tracer
 		}
 	}
 
-	void resize()
+	void export_image()
+	{
+		int res{glm::pow(2,export_res_pow)};
+		width  = res;
+		height = res;
+		resize(true);
+		update_image();
+
+		stbi_flip_vertically_on_write(true);
+		stbi_write_jpg("images/Image 1.jpg", res, res, 3, image, 100);
+
+		res = glm::pow(2,res_pow);
+		width  = res;
+		height = res;
+		resize();
+		update_image();
+		std::cout << "ATTEMPTING TO WRITE IMAGE\n";
+
+	}
+
+	void resize(bool exporting=false)
 	{
 		delete[] image;
 
-		width = glm::pow(2, res_pow);
+		exporting ? width = glm::pow(2, export_res_pow) : width = glm::pow(2, res_pow);
+		// width = glm::pow(2, res_pow);
 		height = width;
 		cam.nx = width;
 		cam.ny=height;

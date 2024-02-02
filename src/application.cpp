@@ -154,9 +154,14 @@ void application::loop()
 		{
 			if (ImGui::CollapsingHeader("Camera Settings"))
 			{
-				ImGui::RadioButton("Perspective", (int*)&rt.cam.ortho, 0);
-				ImGui::RadioButton("Orthographic", (int*)&rt.cam.ortho, 1);
-				ImGui::SliderInt("Resolution", &rt.res_pow, 3, 7);
+				ImGui::RadioButton("perspective", (int*)&rt.cam.ortho, 0);
+				ImGui::RadioButton("orthographic", (int*)&rt.cam.ortho, 1);
+				int res{glm::pow(2, rt.res_pow)};
+				ImGui::Text("preview resolution: %ix%i", res, res);
+				// ImGui::SameLine();
+				// ImGui::PushItemWidth(125);
+				ImGui::SliderInt("##resolution", &rt.res_pow, 3, 7);
+				ImGui::SameLine();
 				if (ImGui::Button("Resize"))
 				{
 					rt.resize();
@@ -279,9 +284,13 @@ void application::loop()
 
 			if (ImGui::CollapsingHeader("Export"))
 			{
+				int res{glm::pow(2, rt.export_res_pow)};
+				ImGui::Text("export resolution: %ix%i", res, res);
+				ImGui::SliderInt("##exportresolution", &rt.export_res_pow, 7, 11);
 				if (ImGui::Button("Save"))
 				{
 					// save picture
+					rt.export_image();
 				}
 				ImGui::NewLine();
 			}
