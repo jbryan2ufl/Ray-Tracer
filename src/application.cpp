@@ -156,7 +156,7 @@ void application::loop()
 			{
 				ImGui::RadioButton("Perspective", (int*)&rt.cam.ortho, 0);
 				ImGui::RadioButton("Orthographic", (int*)&rt.cam.ortho, 1);
-				ImGui::SliderInt("Resolution", &rt.res_pow, 3, 10);
+				ImGui::SliderInt("Resolution", &rt.res_pow, 3, 7);
 				if (ImGui::Button("Resize"))
 				{
 					rt.resize();
@@ -168,6 +168,7 @@ void application::loop()
 				ImGui::Text("x: %f y: %f z: %f", rt.cam.u.x, rt.cam.u.y, rt.cam.u.z);
 				ImGui::Text("x: %f y: %f z: %f", rt.cam.v.x, rt.cam.v.y, rt.cam.v.z);
 				ImGui::Text("x: %f y: %f z: %f", rt.cam.w.x, rt.cam.w.y, rt.cam.w.z);
+				ImGui::NewLine();
 			}
 			
 			if (ImGui::CollapsingHeader("Scene Objects"))
@@ -200,10 +201,15 @@ void application::loop()
 					{
 						if (dynamic_cast<sphere*>(rt.scene[i]))
 						{
+							ImGui::Text("color :");
+							ImGui::SameLine();
 							ImGui::ColorEdit3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->color);
 							ImGui::Text("center:");
 							ImGui::SameLine();
 							ImGui::SliderFloat3(("##sphere"+str).c_str(), (float*)&rt.scene[i]->center, -5, 5);
+							ImGui::Text("radius:");
+							ImGui::SameLine();
+							ImGui::SliderFloat(("##sphere"+str).c_str(), (float*)&dynamic_cast<sphere*>(rt.scene[i])->r, 0.1, 5);
 						}
 						else
 						{
@@ -221,16 +227,25 @@ void application::loop()
 						}
 						if (ImGui::CollapsingHeader("Material"))
 						{
-							ImGui::SliderFloat(("Ambeint##sphere"+str).c_str(), &rt.scene[i]->m.k_a, 0, 1);
-							ImGui::SliderFloat(("Diffuse##sphere"+str).c_str(), &rt.scene[i]->m.k_d, 0, 1);
-							ImGui::SliderFloat(("Specular##sphere"+str).c_str(), &rt.scene[i]->m.k_s, 0, 1);
-							ImGui::SliderInt(("Specular Power##sphere"+str).c_str(), &rt.scene[i]->m.p, 1, 100);
+							ImGui::Text("ambient :");
+							ImGui::SameLine();
+							ImGui::SliderFloat(("##sphereamb"+str).c_str(), &rt.scene[i]->m.k_a, 0, 1);
+							ImGui::Text("diffuse :");
+							ImGui::SameLine();
+							ImGui::SliderFloat(("##spherediff"+str).c_str(), &rt.scene[i]->m.k_d, 0, 1);
+							ImGui::Text("specular:");
+							ImGui::SameLine();
+							ImGui::SliderFloat(("##spherespec"+str).c_str(), &rt.scene[i]->m.k_s, 0, 1);
+							ImGui::Text("shine   :");
+							ImGui::SameLine();
+							ImGui::SliderInt(("##sphereshine"+str).c_str(), &rt.scene[i]->m.p, 1, 100);
 							ImGui::Checkbox("Glazed", &rt.scene[i]->m.glazed);
 						}
 						ImGui::NewLine();
 						ImGui::TreePop();
 					}
 				}
+				ImGui::NewLine();
 			}
 
 			if (ImGui::CollapsingHeader("Light"))
@@ -259,6 +274,16 @@ void application::loop()
 						ImGui::TreePop();
 					}
 				}
+				ImGui::NewLine();
+			}
+
+			if (ImGui::CollapsingHeader("Export"))
+			{
+				if (ImGui::Button("Save"))
+				{
+					// save picture
+				}
+				ImGui::NewLine();
 			}
 		}
 		ImGui::End();
