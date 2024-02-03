@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <vector>
+#include <utility>
 
 #include <string>
 
@@ -17,6 +18,7 @@
 
 #include "engine.h"
 #include "raytracer.h"
+#include "animation.h"
 
 class application
 {
@@ -61,8 +63,20 @@ private:
 	const float maxPeriod = 1.0f / maxFPS;
 	float lastTime = 0.0;
 	float deltaTime{};
+	float time{};
+	float moveStartTime{};
+
+	bool freemove{true};
+
+	int keyframe_time{};
+	int frameCount{};
+	const float videoFPS=5;
+	const float maxVideoPeriod=1.0f/videoFPS;
+	float videoDeltaTime{};
 
 	ImGuiIO* ioptr{};
+
+	animation a{};
 
 
 public:

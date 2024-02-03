@@ -5,6 +5,7 @@
 #include <utility>
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #define INF 999999
 
@@ -191,9 +192,9 @@ struct sphere : public surface
 
 struct triangle : public surface
 {
-	glm::vec3 p1{-1, 0, -1};
-	glm::vec3 p2{-1, 0, 1};
-	glm::vec3 p3{1, 0, 1};
+	glm::vec3 p1{-5, 0, -5};
+	glm::vec3 p2{-5, 0, 5};
+	glm::vec3 p3{5, 0, 5};
 
 	triangle()
 	{

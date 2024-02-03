@@ -15,7 +15,7 @@ struct ray_tracer
 	camera cam{};
 
 	int res_pow{7};
-	int export_res_pow{7};
+	int export_res_pow{6};
 
 	int width  = glm::pow(2, res_pow); // keep it in powers of 2!
 	int height = width; // keep it in powers of 2!
@@ -55,6 +55,14 @@ struct ray_tracer
 			}
 		}
 		return h;
+	}
+
+	void lookat(glm::vec3 point)
+	{
+		glm::vec3 d{glm::normalize(cam.e-point)};
+		cam.w = d;
+		cam.u = glm::normalize(glm::cross(cam.w, cam.world_up));
+		cam.v = glm::normalize(glm::cross(cam.u, cam.w));
 	}
 
 	void update_image()
@@ -110,7 +118,7 @@ struct ray_tracer
 		}
 	}
 
-	void export_image()
+	void export_image(std::string s)
 	{
 		int res{glm::pow(2,export_res_pow)};
 		width  = res;
@@ -119,7 +127,7 @@ struct ray_tracer
 		update_image();
 
 		stbi_flip_vertically_on_write(true);
-		stbi_write_jpg("images/Image 1.jpg", res, res, 3, image, 100);
+		stbi_write_jpg(("images/"+s).c_str(), res, res, 3, image, 100);
 
 		res = glm::pow(2,res_pow);
 		width  = res;
@@ -183,6 +191,11 @@ struct ray_tracer
 			}
 		}
 		return color;
+	}
+
+	void move()
+	{
+		cam.e.x+=1;
 	}
 
 	~ray_tracer()

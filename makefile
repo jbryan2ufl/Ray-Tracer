@@ -2,7 +2,7 @@ CXX = g++
 EXE = main
 INCLUDE = -Iinclude
 LINK = -Llib -lglew32 -lglfw3 -lopengl32 -lgdi32
-FLAGS = -Wall -g
+FLAGS = -Wall -g -std=c++2b
 
 TARGETS = $(subst src/, , $(wildcard src/*.cpp))
 
