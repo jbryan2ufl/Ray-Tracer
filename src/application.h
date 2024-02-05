@@ -70,9 +70,9 @@ private:
 
 	int keyframe_time{};
 	int frameCount{};
-	const float videoFPS=5;
+	const float videoFPS=30;
 	const float maxVideoPeriod=1.0f/videoFPS;
-	float videoDeltaTime{};
+	float videoTime{};
 
 	ImGuiIO* ioptr{};
 

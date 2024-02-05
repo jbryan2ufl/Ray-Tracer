@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <array>
 
 #define INF 999999
 
@@ -94,7 +95,7 @@ struct hit_information
 
 struct material
 {
-	// glm::vec3 k_a{1.0};
+	// float k_a{1.0};
 	float k_a{0.1};
 	float k_d{0.8};
 	float k_s{0.3};
@@ -192,6 +193,9 @@ struct sphere : public surface
 
 struct triangle : public surface
 {
+	// glm::vec3 p1{0, 1, 1};
+	// glm::vec3 p2{1, -1, 1};
+	// glm::vec3 p3{-1, -1, 1};
 	glm::vec3 p1{-5, 0, -5};
 	glm::vec3 p2{-5, 0, 5};
 	glm::vec3 p3{5, 0, 5};
@@ -200,40 +204,26 @@ struct triangle : public surface
 	{
 	}
 
+	triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3)
+		: p1{p1}
+		, p2{p2}
+		, p3{p3}
+	{
+	}
+
+	void move(glm::vec3 pos)
+	{
+		p1+=pos;
+		p2+=pos;
+		p3+=pos;
+	}
+
 	hit_information intersect(ray& view_ray)
 	{
 		hit_information h{};
 		h.s=this;
-		glm::vec3 normal=glm::normalize(glm::cross(p1, p2));
+		glm::vec3 normal{glm::cross(p2-p1,p3-p1)};
 
-		// float denom{glm::dot(h.normal, view_ray.d)};
-
-		// // parallel rays
-		// if (denom == 0)
-		// {
-		// 	return h;
-		// }
-
-		
-		// h.t=glm::dot((p1-view_ray.p), h.normal) / denom;
-		
-		// // calculate contact point
-		// glm::vec3 x{view_ray.evaluate(h.t)};
-		
-		
-		// if (glm::dot(glm::cross(p2-p1,x-p1), h.normal) <= 0)
-		// {
-		// 	return h;
-		// }
-		// if (glm::dot(glm::cross(p3-p2,x-p2), h.normal) <= 0)
-		// {
-		// 	return h;
-		// }
-		// if (glm::dot(glm::cross(p1-p3,x-p3), h.normal) <= 0)
-		// {
-		// 	return h;
-		// }
-		// h.hits++;
 
 		h.t=glm::dot(p1-view_ray.p, normal)/glm::dot(normal, view_ray.d);
 		if (h.t < 0)
@@ -245,14 +235,35 @@ struct triangle : public surface
 		float e2{glm::dot(glm::cross(p3-p2, x-p2), normal)};
 		float e3{glm::dot(glm::cross(p1-p3, x-p3), normal)};
 
-		if (e1 <= 0 || e2 <= 0 || e3 <= 0)
+		// if (e1 <= 0 || e2 <= 0 || e3 <= 0)
+		// {
+		// 	return h;
+		// }
+		if (e1 > 0 && e2 > 0 && e3 > 0)
 		{
-			return h;
+			h.normal=normal;
+			h.hits=1;
 		}
-		h.normal=normal;
-		h.hits=1;
 
 		return h;
+	}
+};
+
+struct tetrahedron
+{
+	glm::vec3 p1{0,  1,  0}; // tip
+	glm::vec3 p2{-1, 0, -1};
+	glm::vec3 p3{1,  0, -1};
+	glm::vec3 p4{0,  0,  1};
+
+	std::array<triangle, 4> triangles;
+
+	tetrahedron()
+	{
+		triangles[0]=triangle{p2, p3, p4}; // base
+		triangles[1]=triangle{p1, p2, p3};
+		triangles[2]=triangle{p1, p3, p4};
+		triangles[3]=triangle{p1, p4, p2};
 	}
 };
 

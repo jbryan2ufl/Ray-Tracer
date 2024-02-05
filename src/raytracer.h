@@ -29,8 +29,20 @@ struct ray_tracer
 		cam.nx=width;
 		cam.ny=height;
 
-		scene.push_back(new sphere{});
-		scene.push_back(new triangle{});
+		glm::vec3 points[4]=
+		{
+			glm::vec3(0, 1, 0),
+			glm::vec3(-1, 0, -1),
+			glm::vec3(1, 0, -1),
+			glm::vec3(0, 0, 1)
+		};
+
+		// scene.push_back(new sphere{});
+		// scene.push_back(new triangle{});
+		scene.push_back(new triangle{points[1], points[2], points[3]});
+		scene.push_back(new triangle{points[0], points[1], points[2]});
+		scene.push_back(new triangle{points[0], points[2], points[3]});
+		scene.push_back(new triangle{points[0], points[3], points[1]});
 
 		ambient_lights.push_back(ambient_light{});
 		point_lights.push_back(point_light{});

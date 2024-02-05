@@ -148,11 +148,7 @@ void application::loop()
 	while (!glfwWindowShouldClose(window))
 	{
 
-		if (!freemove)
-		{
-			rt.cam.e=a.get_keyframe(time);
-			rt.lookat(glm::vec3{0, 0, 0});
-		}
+
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -327,6 +323,10 @@ void application::loop()
 		{
 			a.keyframes.push_back(std::make_pair(keyframe_time, rt.cam.e));
 		}
+		if (ImGui::Button("Remove All Frames"))
+		{
+			a.keyframes.clear();
+		}
 
 		ImGui::Text("%f", time);
 		}
@@ -336,7 +336,7 @@ void application::loop()
 
 		time = glfwGetTime();
 		deltaTime = time - lastTime;
-		videoDeltaTime = time - lastTime;
+		// videoDeltaTime = time - lastTime;
 
 		if (deltaTime < maxPeriod)
 		{
@@ -346,13 +346,17 @@ void application::loop()
 
 		if (!freemove)
 		{
-			if (videoDeltaTime < maxVideoPeriod)
-			{
-				rt.export_image("frame_"+std::to_string(frameCount)+".jpg");
-				frameCount++;
-			}
+			// if (deltaTime < maxVideoPeriod)
+			rt.cam.e=a.get_keyframe(videoTime);
+			videoTime+=maxVideoPeriod;
+			rt.lookat(rt.scene[0]->center);
+			rt.export_image("frame_"+std::to_string(frameCount)+".jpg");
+			frameCount++;
 		}
-
+		else
+		{
+			rt.update_image();
+		}
 		// input
 		// -----
 		processInput(window);
@@ -362,8 +366,6 @@ void application::loop()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		rt.update_image();
-
 		// bind Texture
 		glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -371,6 +373,7 @@ void application::loop()
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -449,7 +452,7 @@ void application::processInput(GLFWwindow *window)
 		{
 			rt.cam.e.y+=0.05f;
 		}
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		{
 			rt.cam.e.y-=0.05f;
 		}
