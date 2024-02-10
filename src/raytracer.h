@@ -23,29 +23,51 @@ struct ray_tracer
 	std::vector<surface*> scene{};
 	std::vector<ambient_light> ambient_lights{};
 	std::vector<point_light> point_lights{};
+	std::vector<material*> materials{};
+
+	bool blinn_phong{false};
+	int bounce_count{1};
 
 	ray_tracer()
 	{
 		cam.nx=width;
 		cam.ny=height;
 
+		materials.push_back(new material{});
 		glm::vec3 points[4]=
 		{
-			glm::vec3(0, 1, 0),
-			glm::vec3(-1, 0, -1),
-			glm::vec3(1, 0, -1),
-			glm::vec3(0, 0, 1)
+			glm::vec3(0, 3, 0),
+			glm::vec3(1, 1, -1),
+			glm::vec3(-1, 1, -1),
+			glm::vec3(0, 1, 1)
 		};
-
-		// scene.push_back(new sphere{});
-		// scene.push_back(new triangle{});
+		scene.push_back(new sphere{});
+		scene.push_back(new triangle{});
 		scene.push_back(new triangle{points[1], points[2], points[3]});
 		scene.push_back(new triangle{points[0], points[1], points[2]});
 		scene.push_back(new triangle{points[0], points[2], points[3]});
 		scene.push_back(new triangle{points[0], points[3], points[1]});
 
+		for (auto& item : scene)
+		{
+			item->m=materials[0];
+		}
+
 		ambient_lights.push_back(ambient_light{});
 		point_lights.push_back(point_light{});
+
+	}
+
+	void addSphere()
+	{
+		scene.push_back(new sphere{});
+		scene.back()->m=materials[0];
+	}
+
+	void addTriangle()
+	{
+		scene.push_back(new triangle{});
+		scene.back()->m=materials[0];
 	}
 
 	hit_information calculate_hit(ray& r)
@@ -87,20 +109,8 @@ struct ray_tracer
 
 				ray r{cam.generate_ray(j, i)};
 
-				// for (auto& l : point_lights)
-				// {
-				// 	if (l.sph.intersect(r))
-				// 	{
-				// 		image[idx+0] = l.color.r * 255;
-				// 		image[idx+1] = l.color.g * 255;
-				// 		image[idx+2] = l.color.b * 255;
-				// 		return;
-				// 	}
-				// }
-
 				hit_information closest_hit{calculate_hit(r)};
 				
-				// glm::vec3 color{get_hit_color(r, closest_hit)};
 				glm::vec3 color{};
 				int depth{};
 				if (closest_hit.hits != 0)
@@ -146,8 +156,6 @@ struct ray_tracer
 		height = res;
 		resize();
 		update_image();
-		std::cout << "ATTEMPTING TO WRITE IMAGE\n";
-
 	}
 
 	void resize(bool exporting=false)
@@ -171,7 +179,7 @@ struct ray_tracer
 			{
 				continue;
 			}
-			color += l.illuminate(r, hit, scene);
+			color += l.illuminate(r, hit, scene, blinn_phong);
 			// color += l.specular(r, hit);
 		}
 		for (auto& l : ambient_lights)
@@ -184,14 +192,14 @@ struct ray_tracer
 		}
 
 
-		if (depth > 1)
+		if (depth > bounce_count)
 		{
 			return color;
 		}
 		depth++;
 
 		// mirror reflection
-		if (hit.s->m.glazed == true)
+		if (hit.s->m->glazed == true)
 		{
 			glm::vec3 l{glm::normalize(r.d-2.0f*hit.normal*glm::dot(r.d, hit.normal))};
 			ray reflection{r.evaluate(hit.t)+0.1f*l, l};
@@ -199,20 +207,24 @@ struct ray_tracer
 			float dist{glm::length(r.p - reflection.p)};
 			if (reflection_hit.hits != 0)
 			{
-				color += shader(reflection, reflection_hit, depth)*reflection_hit.s->m.k_s;
+				color += shader(reflection, reflection_hit, depth)*hit.s->m->k_s;
 			}
 		}
 		return color;
 	}
 
-	void move()
-	{
-		cam.e.x+=1;
-	}
-
 	~ray_tracer()
 	{
 		delete[] image;
+
+		for (auto& obj : scene)
+		{
+			delete obj;
+		}
+		for (auto& obj : materials)
+		{
+			delete obj;
+		}
 	}
 };
 

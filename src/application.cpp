@@ -147,9 +147,6 @@ void application::loop()
 
 	while (!glfwWindowShouldClose(window))
 	{
-
-
-
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -162,11 +159,11 @@ void application::loop()
 			if (ImGui::CollapsingHeader("Camera Settings"))
 			{
 				ImGui::RadioButton("perspective", (int*)&rt.cam.ortho, 0);
+				ImGui::SliderFloat("depth", &rt.cam.d, 0.5f, 3.0f);
+
 				ImGui::RadioButton("orthographic", (int*)&rt.cam.ortho, 1);
 				int res{glm::pow(2, rt.res_pow)};
 				ImGui::Text("preview resolution: %ix%i", res, res);
-				// ImGui::SameLine();
-				// ImGui::PushItemWidth(125);
 				ImGui::SliderInt("##resolution", &rt.res_pow, 3, 7);
 				ImGui::SameLine();
 				if (ImGui::Button("Resize"))
@@ -182,17 +179,58 @@ void application::loop()
 				ImGui::Text("x: %f y: %f z: %f", rt.cam.w.x, rt.cam.w.y, rt.cam.w.z);
 				ImGui::NewLine();
 			}
+
+			if (ImGui::CollapsingHeader("Materials"))
+			{
+				if (ImGui::Button("Add Material"))
+				{
+					rt.materials.push_back(new material{});
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Remove Last"))
+				{
+					if (rt.materials.size() > 1)
+					{
+						delete rt.materials.back();
+						rt.materials.pop_back();
+					}
+				}
+
+				for (int i{}; i < rt.materials.size(); i++)
+				{
+					std::string str{std::to_string(i)};
+					if (ImGui::TreeNode(("Material "+str).c_str()))
+					{
+						ImGui::Text("ambient :");
+						ImGui::SameLine();
+						ImGui::SliderFloat(("##matamb"+str).c_str(), &rt.materials[i]->k_a, 0, 1);
+						ImGui::Text("diffuse :");
+						ImGui::SameLine();
+						ImGui::SliderFloat(("##matdiff"+str).c_str(), &rt.materials[i]->k_d, 0, 1);
+						ImGui::Text("specular:");
+						ImGui::SameLine();
+						ImGui::SliderFloat(("##matspec"+str).c_str(), &rt.materials[i]->k_s, 0, 1);
+						ImGui::Text("shine   :");
+						ImGui::SameLine();
+						ImGui::SliderInt(("##matshine"+str).c_str(), &rt.materials[i]->p, 1, 100);
+						ImGui::Checkbox("Glazed", &rt.materials[i]->glazed);
+						ImGui::NewLine();
+						ImGui::TreePop();
+					}
+				}
+				ImGui::NewLine();
+			}
 			
 			if (ImGui::CollapsingHeader("Scene Objects"))
 			{
 				if (ImGui::Button("Add Sphere"))
 				{
-					rt.scene.push_back(new sphere{});
+					rt.addSphere();
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Add Triangle"))
 				{
-					rt.scene.push_back(new triangle{});
+					rt.addTriangle();
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Remove Last"))
@@ -226,7 +264,12 @@ void application::loop()
 						else
 						{
 							triangle* t = dynamic_cast<triangle*>(rt.scene[i]);
-							ImGui::ColorEdit3(("##tri"+str).c_str(), (float*)&rt.scene[i]->color);
+							ImGui::Text("plane :");
+							ImGui::SameLine();
+							ImGui::Checkbox("##tri", &t->plane);
+							ImGui::Text("color :");
+							ImGui::SameLine();
+							ImGui::ColorEdit3(("##tri"+str).c_str(), (float*)&t->color);
 							ImGui::Text("p1:");
 							ImGui::SameLine();
 							ImGui::SliderFloat3(("##tri1"+str).c_str(), (float*)&t->p1, -5, 5);
@@ -237,21 +280,23 @@ void application::loop()
 							ImGui::SameLine();
 							ImGui::SliderFloat3(("##tri3"+str).c_str(), (float*)&t->p3, -5, 5);
 						}
-						if (ImGui::CollapsingHeader("Material"))
+						if (ImGui::BeginCombo("##material", ("Material "+std::to_string(rt.scene[i]->mat_idx)).c_str()))
 						{
-							ImGui::Text("ambient :");
-							ImGui::SameLine();
-							ImGui::SliderFloat(("##sphereamb"+str).c_str(), &rt.scene[i]->m.k_a, 0, 1);
-							ImGui::Text("diffuse :");
-							ImGui::SameLine();
-							ImGui::SliderFloat(("##spherediff"+str).c_str(), &rt.scene[i]->m.k_d, 0, 1);
-							ImGui::Text("specular:");
-							ImGui::SameLine();
-							ImGui::SliderFloat(("##spherespec"+str).c_str(), &rt.scene[i]->m.k_s, 0, 1);
-							ImGui::Text("shine   :");
-							ImGui::SameLine();
-							ImGui::SliderInt(("##sphereshine"+str).c_str(), &rt.scene[i]->m.p, 1, 100);
-							ImGui::Checkbox("Glazed", &rt.scene[i]->m.glazed);
+							for (int j{}; j < rt.materials.size(); j++)
+							{
+								const bool is_selected{rt.scene[i]->mat_idx==j};
+								if (ImGui::Selectable(("Material "+std::to_string(j)).c_str(), is_selected))
+								{
+									rt.scene[i]->mat_idx=j;
+									rt.scene[i]->m=rt.materials[j];
+								}
+
+								if (is_selected)
+								{
+									ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
 						}
 						ImGui::NewLine();
 						ImGui::TreePop();
@@ -287,6 +332,13 @@ void application::loop()
 					}
 				}
 				ImGui::NewLine();
+			}
+			if (ImGui::CollapsingHeader("Shading"))
+			{
+				// ImGui::Text("blinn phong:");
+				// ImGui::SameLine();
+				ImGui::Checkbox("blinn phong", &rt.blinn_phong);
+				ImGui::SliderInt("bounce count", &rt.bounce_count, 0, 5);
 			}
 
 			if (ImGui::CollapsingHeader("Export"))

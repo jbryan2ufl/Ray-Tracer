@@ -6,7 +6,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <array>
 
 #define INF 999999
 
@@ -42,7 +41,7 @@ struct camera
 
 	ray viewing_ray{};
 
-	bool ortho{false};
+	bool ortho{0};
 
 	ray& generate_ray(int i, int j)
 	{
@@ -107,41 +106,11 @@ struct surface
 {
 	bool visible{true};
 	glm::vec3 color{1.0f, 0.0f, 0.0f};
-	material m{};
+	material* m{};
+	int mat_idx{};
 	glm::vec3 center{};
 
 	virtual hit_information intersect(ray& view_ray) = 0;	
-};
-
-struct simple_sphere
-{
-	glm::vec3* c;
-	glm::vec3* color;
-	float r{0.1f};
-
-	simple_sphere()
-	{
-	}
-	simple_sphere(glm::vec3* c, glm::vec3* color)
-		: c{c}
-		, color{color}
-	{
-	}
-
-	bool intersect(ray& view_ray)
-	{
-		glm::vec3 ec{view_ray.p-*c};
-		float dd{glm::dot(view_ray.d, view_ray.d)};
-		float discriminant = glm::pow(glm::dot(view_ray.d, ec), 2) - dd * (glm::dot(ec, ec) - glm::pow(r, 2));
-		if (discriminant >= 0) // at least one solutions
-		{
-			return true;
-		}
-
-		// if ray misses object, do nothing
-
-		return false;
-	}
 };
 
 struct sphere : public surface
@@ -150,14 +119,6 @@ struct sphere : public surface
 
 	sphere()
 	{
-	}
-
-	sphere(glm::vec3 c, float r, glm::vec3 col, material mat)
-		: r{r}
-	{
-		center=c;
-		color=col;
-		m=mat;
 	}
 
 	hit_information intersect(ray& view_ray)
@@ -193,12 +154,14 @@ struct sphere : public surface
 
 struct triangle : public surface
 {
-	// glm::vec3 p1{0, 1, 1};
-	// glm::vec3 p2{1, -1, 1};
-	// glm::vec3 p3{-1, -1, 1};
-	glm::vec3 p1{-5, 0, -5};
-	glm::vec3 p2{-5, 0, 5};
-	glm::vec3 p3{5, 0, 5};
+	glm::vec3 p1{-1, 0, -1};
+	glm::vec3 p2{-1, 0, 1};
+	glm::vec3 p3{1, 0, 1};
+	// glm::vec3 p1{-5, 0, -5};
+	// glm::vec3 p2{-5, 0, 5};
+	// glm::vec3 p3{5, 0, 5};
+
+	bool plane{false};
 
 	triangle()
 	{
@@ -222,7 +185,7 @@ struct triangle : public surface
 	{
 		hit_information h{};
 		h.s=this;
-		glm::vec3 normal{glm::cross(p2-p1,p3-p1)};
+		glm::vec3 normal{glm::normalize(glm::cross(p2-p1,p3-p1))};
 
 
 		h.t=glm::dot(p1-view_ray.p, normal)/glm::dot(normal, view_ray.d);
@@ -239,31 +202,13 @@ struct triangle : public surface
 		// {
 		// 	return h;
 		// }
-		if (e1 > 0 && e2 > 0 && e3 > 0)
+		if ((e1 > 0 && e2 > 0 && e3 > 0) || plane)
 		{
 			h.normal=normal;
 			h.hits=1;
 		}
 
 		return h;
-	}
-};
-
-struct tetrahedron
-{
-	glm::vec3 p1{0,  1,  0}; // tip
-	glm::vec3 p2{-1, 0, -1};
-	glm::vec3 p3{1,  0, -1};
-	glm::vec3 p4{0,  0,  1};
-
-	std::array<triangle, 4> triangles;
-
-	tetrahedron()
-	{
-		triangles[0]=triangle{p2, p3, p4}; // base
-		triangles[1]=triangle{p1, p2, p3};
-		triangles[2]=triangle{p1, p3, p4};
-		triangles[3]=triangle{p1, p4, p2};
 	}
 };
 
@@ -278,7 +223,7 @@ struct ambient_light : public light
 {
 	glm::vec3 illuminate(ray& r, hit_information& hit)
 	{
-		return hit.s->m.k_a * hit.s->color * color;
+		return hit.s->m->k_a * hit.s->color * color;
 	}
 };
 
@@ -296,7 +241,7 @@ struct point_light : public light
 	{
 	}
 
-	glm::vec3 illuminate(ray& r, hit_information& hit, std::vector<surface*>& scene)
+	glm::vec3 illuminate(ray& r, hit_information& hit, std::vector<surface*>& scene, bool& blinn_phong)
 	{
 		glm::vec3 x{r.evaluate(hit.t)};
 		float dist{glm::length(p - x)};
@@ -319,18 +264,23 @@ struct point_light : public light
 				return glm::vec3{0, 0, 0};
 			}
 		}
-		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l)) * color /(float)glm::pow(dist,2)}; // /(float)glm::pow(dist,2)
-		// glm::vec3 v2{glm::normalize(l-r.d)};
+		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l)) * color/(float)glm::pow(dist,2)}; // /(float)glm::pow(dist,2)
 
-		glm::vec3 Ld = hit.s->m.k_d*hit.s->color*E;
+		glm::vec3 Ld = hit.s->m->k_d*hit.s->color*E;
 
 		// phong model
-		glm::vec3 vR{-glm::normalize(2*glm::dot(hit.normal, l)*hit.normal-l)};
-		glm::vec3 vE{r.d};
-		glm::vec3 Ls = hit.s->m.k_s*color*(float)glm::pow(glm::max(0.0f, glm::dot(vE, vR)), hit.s->m.p);
-		
-		// blinn phong model
-		// glm::vec3 Ls = hit.s->m.k_s*(float)glm::pow(glm::max(0.0f,glm::dot(hit.normal,v2)), hit.s->m.p)*E*color;
+		glm::vec3 Ls{};
+		if (!blinn_phong)
+		{
+			glm::vec3 vR{-glm::normalize(2*glm::dot(hit.normal, l)*hit.normal-l)};
+			glm::vec3 vE{r.d};
+			Ls = hit.s->m->k_s*color*(float)glm::pow(glm::max(0.0f, glm::dot(vE, vR)), hit.s->m->p);
+		}
+		else
+		{
+			glm::vec3 v2{glm::normalize(l-r.d)};
+			Ls = hit.s->m->k_s*(float)glm::pow(glm::max(0.0f,glm::dot(hit.normal,v2)), hit.s->m->p)*E*color;
+		}
 		return Ld+Ls;
 	}
 };
