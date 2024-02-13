@@ -12,3 +12,8 @@ under the "Export" tab you can change the export resolution and Save the image
 images and video frames save to /images/
 
 the pregenerated report videos and images can be found in /report/
+
+to generate videos place keyframes and click play with the correct export resolution selected
+frames will be generated in /images/ and can be compiled with ffmpeg
+the ffmpeg command used is below:
+	ffmpeg -framerate 24 -i frame_%d.jpg -c:v libx264 -crf 0 output.mp4
