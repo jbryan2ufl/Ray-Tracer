@@ -158,10 +158,21 @@ void application::loop()
 		{
 			if (ImGui::CollapsingHeader("Camera Settings"))
 			{
+
+				if (ImGui::Button("Look At 0"))
+				{
+					rt.lookat(glm::vec3{0,1,0});
+				}
+
 				ImGui::RadioButton("perspective", (int*)&rt.cam.ortho, 0);
-				ImGui::SliderFloat("depth", &rt.cam.d, 0.5f, 3.0f);
+				ImGui::SliderFloat("depth", &rt.cam.d, 0.5f, 5.0f);
 
 				ImGui::RadioButton("orthographic", (int*)&rt.cam.ortho, 1);
+				ImGui::SliderFloat("##l", &rt.cam.l, -0.5, -5);
+				ImGui::SliderFloat("##r", &rt.cam.r, 0.5, 5);
+				ImGui::SliderFloat("##b", &rt.cam.b, -0.5, -5);
+				ImGui::SliderFloat("##t", &rt.cam.t, 0.5, 5);
+				
 				int res{glm::pow(2, rt.res_pow)};
 				ImGui::Text("preview resolution: %ix%i", res, res);
 				ImGui::SliderInt("##resolution", &rt.res_pow, 3, 7);
@@ -172,7 +183,8 @@ void application::loop()
 				}
 
 				ImGui::SeparatorText("Camera Position");
-				ImGui::Text("x: %f\ny: %f\nz: %f", rt.cam.e.x, rt.cam.e.y, rt.cam.e.z);
+				// ImGui::Text("x: %f\ny: %f\nz: %f", rt.cam.e.x, rt.cam.e.y, rt.cam.e.z);
+				ImGui::SliderFloat3("##campos", (float*)&rt.cam.e, -5, 5);
 				ImGui::SeparatorText("Camera Basis");
 				ImGui::Text("x: %f y: %f z: %f", rt.cam.u.x, rt.cam.u.y, rt.cam.u.z);
 				ImGui::Text("x: %f y: %f z: %f", rt.cam.v.x, rt.cam.v.y, rt.cam.v.z);
@@ -335,9 +347,6 @@ void application::loop()
 			}
 			if (ImGui::CollapsingHeader("Shading"))
 			{
-				// ImGui::Text("blinn phong:");
-				// ImGui::SameLine();
-				ImGui::Checkbox("blinn phong", &rt.blinn_phong);
 				ImGui::SliderInt("bounce count", &rt.bounce_count, 0, 5);
 			}
 
@@ -354,37 +363,40 @@ void application::loop()
 				ImGui::NewLine();
 			}
 
+			if (ImGui::CollapsingHeader("Animation"))
+			{
+				if (ImGui::Button("Play"))
+				{
+					freemove=!freemove;
+					frameCount=0;
+				}
+				ImGui::Text("%f", keyframe_time);
+				ImGui::SameLine();
+				if (ImGui::Button("+##keyframe"))
+				{
+					keyframe_time++;
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("-##keyframe"))
+				{
+					keyframe_time--;
+				}
+				if (ImGui::Button("Add Frame"))
+				{
+					a.keyframes.push_back(keyframe{keyframe_time, rt.cam.e, glm::vec3{0, 0, 0}, rt.cam.d});
+				}
+				if (ImGui::Button("Remove All Frames"))
+				{
+					a.keyframes.clear();
+				}
 
-		if (ImGui::Button("Play"))
-		{
-			freemove=!freemove;
-			frameCount=0;
-		}
-		ImGui::Text("%i", keyframe_time);
-		ImGui::SameLine();
-		if (ImGui::Button("+##keyframe"))
-		{
-			keyframe_time++;
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("-##keyframe"))
-		{
-			keyframe_time--;
-		}
-		if (ImGui::Button("Add Frame"))
-		{
-			a.keyframes.push_back(std::make_pair(keyframe_time, rt.cam.e));
-		}
-		if (ImGui::Button("Remove All Frames"))
-		{
-			a.keyframes.clear();
-		}
-
-		ImGui::Text("%f", time);
+				ImGui::Text("%f", time);
+			}
 		}
 		ImGui::End();
 		// ImGui::ShowDemoWindow();
 		ImGui::Render();
+
 
 		time = glfwGetTime();
 		deltaTime = time - lastTime;
@@ -398,20 +410,35 @@ void application::loop()
 
 		if (!freemove)
 		{
-			// if (deltaTime < maxVideoPeriod)
-			rt.cam.e=a.get_keyframe(videoTime);
+			// rt.lightAnimation(videoTime);
+			keyframe k{a.get_keyframe(videoTime)};
+			rt.cam.e=k.position;
+			rt.cam.d=k.depth;
+			rt.lookat(glm::vec3{0, 1, 0});
 			videoTime+=maxVideoPeriod;
-			rt.lookat(rt.scene[0]->center);
+			// rt.lookat(rt.scene[0]->center);
+			rt.scene[rt.scene.size()-2]->center.x=glm::sin(videoTime)*5-3;
+			rt.scene[rt.scene.size()-2]->center.y=glm::cos(videoTime)*1+2;
+			rt.scene[rt.scene.size()-2]->center.z=glm::cos(videoTime)*5+1;
 			rt.export_image("frame_"+std::to_string(frameCount)+".jpg");
 			frameCount++;
+			
 		}
 		else
 		{
+			// rt.lightAnimation(time);
 			rt.update_image();
+			rt.scene[rt.scene.size()-2]->center.x=glm::sin(time)*5-3;
+			rt.scene[rt.scene.size()-2]->center.y=glm::cos(time)*1+2;
+			rt.scene[rt.scene.size()-2]->center.z=glm::cos(time)*5+1;
 		}
+
+		
+
 		// input
 		// -----
 		processInput(window);
+		
 
 		// render
 		// ------

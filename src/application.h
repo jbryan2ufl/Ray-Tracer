@@ -68,15 +68,15 @@ private:
 
 	bool freemove{true};
 
-	int keyframe_time{};
+	float keyframe_time{};
 	int frameCount{};
-	const float videoFPS=30;
+	const float videoFPS=24;
 	const float maxVideoPeriod=1.0f/videoFPS;
 	float videoTime{};
 
 	ImGuiIO* ioptr{};
 
-	animation a{};
+	animation_manager a{};
 
 
 public:

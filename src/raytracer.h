@@ -8,14 +8,15 @@
 #include <stb_image_write.h>
 
 #include "engine.h"
+#include "animation.h"
 
 struct ray_tracer
 {
 	// Create the image (RGB Array) to be displayed
 	camera cam{};
 
-	int res_pow{7};
-	int export_res_pow{6};
+	int res_pow{6};
+	int export_res_pow{10};
 
 	int width  = glm::pow(2, res_pow); // keep it in powers of 2!
 	int height = width; // keep it in powers of 2!
@@ -33,7 +34,11 @@ struct ray_tracer
 		cam.nx=width;
 		cam.ny=height;
 
-		materials.push_back(new material{});
+		materials.push_back(new material{0.5, 0.4, 0.8, 32, true});
+		materials.push_back(new material{0.25, 0.4, 0.6, 100, true});
+		materials.push_back(new material{0.4, 0.4, 0.25, 16});
+		materials.push_back(new material{0.5, 0.2, 0.2, 8});
+
 		glm::vec3 points[4]=
 		{
 			glm::vec3(0, 3, 0),
@@ -41,21 +46,42 @@ struct ray_tracer
 			glm::vec3(-1, 1, -1),
 			glm::vec3(0, 1, 1)
 		};
-		scene.push_back(new sphere{});
-		scene.push_back(new triangle{});
 		scene.push_back(new triangle{points[1], points[2], points[3]});
+		scene.back()->m=materials[0];
 		scene.push_back(new triangle{points[0], points[1], points[2]});
+		scene.back()->m=materials[0];
 		scene.push_back(new triangle{points[0], points[2], points[3]});
+		scene.back()->m=materials[0];
 		scene.push_back(new triangle{points[0], points[3], points[1]});
+		scene.back()->m=materials[0];
 
-		for (auto& item : scene)
-		{
-			item->m=materials[0];
-		}
+		scene.push_back(new sphere{});
+		scene.back()->m=materials[1];
+		scene.back()->color=glm::vec3{75.0f/255, 255.0f/255, 0.0f/255};
+		scene.back()->r=1.5f;
+		scene.back()->center=glm::vec3{-3.0, 2.0, 0};
+
+		scene.push_back(new sphere{});
+		scene.back()->m=materials[2];
+		scene.back()->color=glm::vec3{0.0f/255, 210.0f/255, 255.0f/255};
+		scene.back()->r=0.5f;
+		scene.back()->center=glm::vec3{-5, 2.5, 2.0};
+		// scene.back()->center=glm::vec3{0, 2.0, -2.0};
+
+		scene.push_back(new triangle{});
+		scene.back()->m=materials[3];
+		scene.back()->color=glm::vec3{200.0f/255, 200.0f/255, 200.0f/255};
+		dynamic_cast<triangle*>(scene.back())->plane=true;
+
 
 		ambient_lights.push_back(ambient_light{});
-		point_lights.push_back(point_light{});
 
+		point_lights.push_back(point_light{glm::vec3{-2.0, 4.0, -3.0}, glm::vec3{0, 1, 1}, glm::vec3{1, 0, 1}, 1.0f});
+		point_lights.push_back(point_light{glm::vec3{-0.5, 3.5, 0.5}, glm::vec3{1, 1, 0}, glm::vec3{1, 0, 0.5}, 1.5f});
+
+		cam.e=glm::vec3{1.5f, 4.0f, -2.0f};
+
+		lookat(glm::vec3{-0.5, 1.5, 0.0});
 	}
 
 	void addSphere()
@@ -156,6 +182,22 @@ struct ray_tracer
 		height = res;
 		resize();
 		update_image();
+	}
+
+	void lightAnimation(float time)
+	{
+		for (auto& l : point_lights)
+		{
+			float animationTime{time/l.period}; // between 0 and 1
+			if (animationTime < 0.5)
+			{
+				l.color=customMix(l.animationEndColor, l.animationStartColor, animationTime);
+			}
+			else
+			{
+				l.color=customMix(l.animationStartColor, l.animationEndColor, animationTime);
+			}
+		}
 	}
 
 	void resize(bool exporting=false)

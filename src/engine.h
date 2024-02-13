@@ -21,7 +21,7 @@ struct ray
 
 struct camera
 {
-	glm::vec3 e{0, 0, -5}; // viewpoint
+	glm::vec3 e{}; // viewpoint
 
 	glm::vec3 u{1, 0, 0}; // right basis vector
 	glm::vec3 v{0, 1, 0}; // up basis vector
@@ -32,16 +32,16 @@ struct camera
 	int nx{}; // x resolution
 	int ny{}; // y resolution
 
-	int l{-1}; // left bound
-	int r{1}; // right bound
-	int b{-1}; // bottom bound
-	int t{1}; // top bound
+	float l{-5}; // left bound
+	float r{5}; // right bound
+	float b{-5}; // bottom bound
+	float t{5}; // top bound
 
-	float d{1.3f};
+	float d{5.0f};
 
 	ray viewing_ray{};
 
-	bool ortho{0};
+	bool ortho{false};
 
 	ray& generate_ray(int i, int j)
 	{
@@ -109,14 +109,13 @@ struct surface
 	material* m{};
 	int mat_idx{};
 	glm::vec3 center{};
+	float r{1.0f};
 
 	virtual hit_information intersect(ray& view_ray) = 0;	
 };
 
 struct sphere : public surface
 {
-	float r{1.0f};
-
 	sphere()
 	{
 	}
@@ -232,6 +231,9 @@ struct point_light : public light
 	// simple_sphere sph{&p, &color};
 
 	glm::vec3 p{0, 2, 0}; // light position
+	glm::vec3 animationStartColor{1, 1, 1};
+	glm::vec3 animationEndColor{1, 1, 1};
+	float period{};
 
 	point_light()
 	{
@@ -241,8 +243,20 @@ struct point_light : public light
 	{
 	}
 
+	point_light(glm::vec3 pos, glm::vec3 startColor, glm::vec3 endColor, float period)
+		: p{pos}
+		, animationStartColor{startColor}
+		, animationEndColor{endColor}
+		, period{period}
+	{
+	}
+
 	glm::vec3 illuminate(ray& r, hit_information& hit, std::vector<surface*>& scene, bool& blinn_phong)
 	{
+		if (!visible)
+		{
+			return glm::vec3{0, 0, 0};
+		}
 		glm::vec3 x{r.evaluate(hit.t)};
 		float dist{glm::length(p - x)};
 		glm::vec3 l{(p-x)/dist}; // normalized ray pointing to light
@@ -264,7 +278,7 @@ struct point_light : public light
 				return glm::vec3{0, 0, 0};
 			}
 		}
-		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l)) * color/(float)glm::pow(dist,2)}; // /(float)glm::pow(dist,2)
+		glm::vec3 E{glm::max(0.0f,glm::dot(hit.normal,l)) * color}; // /(float)glm::pow(dist,2)
 
 		glm::vec3 Ld = hit.s->m->k_d*hit.s->color*E;
 
