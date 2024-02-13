@@ -6,11 +6,11 @@ FLAGS =-std=c++2b -w
 
 TARGETS = $(subst src/, , $(wildcard src/*.cpp))
 
-all: clean $(TARGETS:.cpp=.o)
+all: clean clean2 $(TARGETS:.cpp=.o)
 	$(CXX) *.o -o $(EXE) $(LINK) $(FLAGS)
 
-# clean2:
-# 	$(CXX) -c imgui/*.cpp $(INCLUDE) $(LINK)
+clean2:
+	$(CXX) -c imgui/*.cpp $(INCLUDE) $(LINK)
 
 %.o: src/%.cpp
 	$(CXX) -c $< -o $@ $(INCLUDE) $(FLAGS)
